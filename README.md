@@ -1,22 +1,31 @@
 # Pixiv Downloader
 =============
 
-## Overview
+## 简介
 
-#### A simple tool to download pictures from pixiv.
+Pixiv批量下载工具 目前可以批量下载画师所有作品
 
-## Installation
+## 下载链接
 
-#### 1、You need to input your Pixiv ID and password for the first time you use this software
+[NoGuiVersion](https://mega.co.nz/#!3R001BoL!DT73rxhvPKclOJxV5f2ih3i4txpvat3nKuHvbfHWFYU)
 
-#### 2、Input the artists' Pixiv ID separated by commas
-
-## Screenshot
+## 截图
 
 ![img](http://i.imgur.com/OKAv1kM.png)
 
+## 更新日志
+
+###v 1.1
+
+- 使用iphone api查找大图 更高效率
+- 多线程 默认使用5个线程同时下载
+- 取消一次输入多个画师
+
+### v 1.0
+
+- 初版
+
 ## TODO
 
-#### 1、[NEW] GUI
-#### 2、[NEW] Multithread downloading
-#### 3、[NEW] More function
+- 图形化界面
+- 更多功能
