@@ -11,7 +11,7 @@ Pixiv批量下载工具 目前可以批量下载画师所有作品
 
 ## 截图
 
-![img](http://i.imgur.com/OKAv1kM.png)
+![img](https://raw.github.com/bebound/Pixiv/master/ScreenShot/1.png)
 
 ## 更新日志
 
