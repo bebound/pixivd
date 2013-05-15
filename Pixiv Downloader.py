@@ -192,7 +192,7 @@ def main():
     print (info.center(80, '#'))
     login()
     #IDNumber = 141132
-    IDNumber = input("输入作者Pixiv ID")
+    IDNumber = input("输入作者Pixiv ID:")
     getAllIllustID(IDNumber)
     downloadAll()
     

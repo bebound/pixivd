@@ -3,11 +3,14 @@
 
 ## 简介
 
-Pixiv批量下载工具 目前可以批量下载画师所有作品
+Python3写成的Pixiv批量下载工具 目前可以批量下载画师所有作品
+
+图形化界面及更多功能开发中
 
 ## 下载链接
 
-[NoGuiVersion](https://mega.co.nz/#!3R001BoL!DT73rxhvPKclOJxV5f2ih3i4txpvat3nKuHvbfHWFYU)
+[NoGuiVersion](https://mega.co.nz/#!yQlX2KID!YLGnOwLTg-Qm1JaGFrvkzSEdBddwHnVdB480E2_5obc
+)
 
 ## 截图
 
@@ -15,9 +18,16 @@ Pixiv批量下载工具 目前可以批量下载画师所有作品
 
 ## 更新日志
 
+###v 1.1.1
+
+- 增加download.txt
+- 改进下载进度显示
+- 增强parseIllust
+- 网络超时提示
+
 ###v 1.1
 
-- 使用iphone api查找大图 更高效率
+- 使用iphone pixiv api查找大图 更高效率
 - 多线程 默认使用5个线程同时下载
 - 取消一次输入多个画师
 
@@ -25,7 +35,14 @@ Pixiv批量下载工具 目前可以批量下载画师所有作品
 
 - 初版
 
+## 问题
+
+- 登陆错误检测
+- cookie过期检测
+- 频繁写入download.txt
+
 ## TODO
 
 - 图形化界面
-- 更多功能
+- 更多搜索方式
+- 过滤
