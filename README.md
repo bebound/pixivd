@@ -5,16 +5,22 @@
 
 Python3写成的Pixiv批量下载工具 目前可以批量下载画师所有作品
 
-图形化界面及更多功能开发中
+图形化界面开发中
 
-## 下载链接
+
+## 截图
+NoGuiVersion
+![img](https://raw.github.com/bebound/Pixiv/master/ScreenShot/1.png)
+
+GuiVersion(beta)
+![img](https://raw.github.com/bebound/Pixiv/master/ScreenShot/GUI1.png)
+
+## EXE下载链接
 
 [NoGuiVersion](https://mega.co.nz/#!yQlX2KID!YLGnOwLTg-Qm1JaGFrvkzSEdBddwHnVdB480E2_5obc
 )
 
-## 截图
 
-![img](https://raw.github.com/bebound/Pixiv/master/ScreenShot/1.png)
 
 ## 更新日志
 
