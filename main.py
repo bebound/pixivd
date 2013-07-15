@@ -19,8 +19,6 @@ import ui_PixivMainWindow
 import ui_Illust128View
 
 
-
-
 __appname__ = 'Pixiv Download (beta)'
 
 cookiejar = http.cookiejar.LWPCookieJar()
@@ -31,13 +29,12 @@ urllib.request.install_opener(urlOpener)
 
 fetch_timeout = 15     #urllib超时时间
 curSearchAllIllustID = []     #根据搜索条件获取到的IllustID
-totalIllust = 0
-parsedIllust=[]
-curNeedStopThreads=[]
-curViewIllust=[]
-curCheckedIllustID=[]
-curDownloadingIllustID=[]
-curManageIllust=[]
+parsedIllust=[]         #parse过的illust
+curNeedStopThreads=[]    #可停止进程
+curViewIllust=[]         #当前viewWidget的128们
+curCheckedIllustID=[]    #当前选择的128们
+curDownloadingIllustID=[]  #正在下载的illust
+curManageIllust=[]       #manageWidget的row
 maxDownloadThread=5
 startDownload=0
 downloadQuene=queue.Queue()
@@ -61,6 +58,15 @@ class Illust128View(QtGui.QWidget,ui_Illust128View.Ui_Widget):
 
     def iconClicked(self):
         self.sigClicked.emit(str(self.illustID))
+
+    def check(self):
+        if not self.toolButton.isChecked():
+            self.toolButton.click()
+
+    def changeCheckStatus(self):
+        self.toolButton.click()
+
+
 
 
 class PixivMainWindow(QtGui.QMainWindow, ui_PixivMainWindow.Ui_mainWindow):
@@ -118,6 +124,8 @@ class PixivMainWidget(QtGui.QWidget, ui_Pixiv.Ui_mainWidget):
         self.nextPage.clicked.connect(lambda: self.gotoPage(self.viewCurPage+1))
         self.downloadChecked.clicked.connect(self.addDownloadingIllustID)
         self.sigParseIllust128Over.connect(self.addPicIllust128)
+        self.checkAll.clicked.connect(self.checkAllFunction)
+        self.invertCheckAll.clicked.connect(self.invertCheckAllFunction)
 
         self.manageTableWidget.horizontalHeader().setResizeMode(QtGui.QHeaderView.Stretch)
         self.manageTableWidget.setUpdatesEnabled(True)
@@ -200,8 +208,11 @@ class PixivMainWidget(QtGui.QWidget, ui_Pixiv.Ui_mainWidget):
             self.getAvatar()
 
     def startSearch(self):
+        global curNeedStopThreads
         for i in curNeedStopThreads:
             i._stop()
+        curNeedStopThreads=[]
+
         self.viewCurPage=1
         self.viewMaxPage=-1
         self.viewCurUserID=self.stackUserID.text().strip()
@@ -214,9 +225,11 @@ class PixivMainWidget(QtGui.QWidget, ui_Pixiv.Ui_mainWidget):
 
         t1=threading.Thread(target=self.downloadPixivUserInfo, args=(self.viewCurUserID,))
         t1.start()
+        curNeedStopThreads.append(t1)
 
         t2=threading.Thread(target=self.gotoPage, args=(1,))
         t2.start()
+        curNeedStopThreads.append(t2)
 
     def downloadPixivUserInfo(self,userID):
         url = "http://www.pixiv.net/member_illust.php?id=" + userID
@@ -226,7 +239,6 @@ class PixivMainWidget(QtGui.QWidget, ui_Pixiv.Ui_mainWidget):
         findUserName = re.compile(r'"user">(.*)</h1>')
         userName = findUserName.search(str(userLink)).group(1)
         self.pixivUserName.setText(userName)
-
 
     def searchALLUserID(self):
         t = threading.Thread(target=self.getAllIllustID, args=(self.stackUserID.text().strip(),))
@@ -318,15 +330,12 @@ class PixivMainWidget(QtGui.QWidget, ui_Pixiv.Ui_mainWidget):
             self.viewMaxPage=self.viewCurPage
             self.nextPage.setEnabled(False)
 
-
     #开始parse所需的ID线程
     def downloadIllust128(self,illustList):
         for i in illustList:
             t=threading.Thread(target=self.parseIllust, args=(i,'returnSig','lock'))
             t.start()
             curNeedStopThreads.append(t)
-
-
 
     #接收到parse完成的ID后，下载128图片并添加图标
     def addPicIllust128(self,parsedIllust):
@@ -342,7 +351,6 @@ class PixivMainWidget(QtGui.QWidget, ui_Pixiv.Ui_mainWidget):
 
                 i.setPic(filePath)
 
-
     def changeCheckedIllustID(self,illustID):
 
         illustID=int(illustID)
@@ -355,6 +363,14 @@ class PixivMainWidget(QtGui.QWidget, ui_Pixiv.Ui_mainWidget):
             self.downloadChecked.setEnabled(False)
         else:
             self.downloadChecked.setEnabled(True)
+
+    def checkAllFunction(self):
+        for i in curViewIllust:
+            i.check()
+
+    def invertCheckAllFunction(self):
+        for i in curViewIllust:
+            i.changeCheckStatus()
 
     #停止不需要的线程 开始获取下一页的
     def gotoPage(self,page):
