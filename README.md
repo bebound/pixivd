@@ -35,6 +35,10 @@ NoGuiVersion
 - 勉强能用
 - 各种功能不断添加中
 
+###NoGUI v 1.2
+
+- 使用Quene下载队列
+- 一次可添加多个ID 以空格分隔
 
 ###NoGUI v 1.1.1
 

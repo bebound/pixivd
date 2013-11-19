@@ -2,170 +2,181 @@ import urllib
 import http.cookiejar
 import re
 import os
+import csv
+import io
 import html.parser
 from bs4 import BeautifulSoup
 import threading
-import csv
-import io
+import queue
+import http.client
 
-fetch_timeout=10
-allIllustID = []
-totalIllust = 0
-finished = 0
-finishLock = threading.Lock()
-printLock = threading.Lock()
+
+fetch_timeout = 10
 downloaded = []
-downloadedLock = threading.Lock()
-maxConnections = 5
-connectionLock = threading.BoundedSemaphore(maxConnections)
+PHPSESSID = ''
+allIllust = []
+illustQuene = queue.Queue()
+curIllustNumber = 0
+totalIllust = 0
+curFilePath = ''
+printLock = threading.Lock()
+fileLock = threading.Lock()
 
 
 def getAllIllustID(userID):
-    global downloaded
-    url = "http://www.pixiv.net/member_illust.php?id=" + str(userID)
-    end = 0
+    global curFilePath
+
     if os.path.exists('downloaded.txt'):
         for line in open('downloaded.txt', 'r'):
             downloaded.append(line.strip())
+    else:
+        with open('downloaded.txt', 'wb'):
+            pass
+
+    url = "http://www.pixiv.net/member_illust.php?id=" + str(userID)
+    end = 0
+
+    htmlSrc = urlOpener.open(url).read().decode('utf-8')
+    parser = BeautifulSoup(htmlSrc)
+    userLink = parser.select('h1.user')
+    findUserName = re.compile(r'"user">(.*)</h1>')
+    curUserName = findUserName.search(str(userLink)).group(1)
+    curFilePath = str(os.path.abspath(userID) + ' ' + curUserName)
+    if not os.path.isdir(userID + ' ' + curUserName):
+        os.mkdir(userID + ' ' + curUserName)
+
     while end != 1:
         nextUrl = getPage(url, userID)
         if not nextUrl:
             end = 1
         else:
             url = nextUrl
-    global totalIllust
-    totalIllust = len(allIllustID)
-    print('total', totalIllust, ':', allIllustID)
 
+    global totalIllust, curIllustNumber
+    curIllustNumber = 1
+    totalIllust = len(allIllust)
+    print('total', len(allIllust), ':', allIllust)
+    for i in allIllust:
+        illustQuene.put(i)
 
 
 def getPage(url, userID):
+    printInfo = "GetPage " + url
+    print(printInfo.center(80, '*'))
+    htmlSrc = urlOpener.open(url, timeout=fetch_timeout).read().decode('utf-8')
+    parser = BeautifulSoup(htmlSrc)
+    illustLink = parser.select('a.work')
+    findIllustID = re.compile(r'_id=(.*)"><img')
+
+    for item in illustLink:
+        illustID = findIllustID.search(str(item)).group(1)
+        filePath = curFilePath
+        filePath += "\\" + illustID + ".jpg"
+        filePath2 = curFilePath
+        filePath2 += "\\" + illustID + ".png"
+        if os.path.exists(filePath) or os.path.exists(filePath2) or str(illustID) in downloaded:
+            print(illustID, "Already Saved")
+        else:
+            print(illustID, "Added")
+            allIllust.append(illustID)
     try:
-        printInfo = "GetPage " + url
-        print (printInfo.center(80, '*'))
-        htmlSrc = urlOpener.open(url,timeout=fetch_timeout).read().decode('utf-8')
-        parser = BeautifulSoup(htmlSrc)
-        illustLink = parser.select('a.work')
-        userLink = parser.select('h1.user')
-
-        findIllustID = re.compile(r'_id=(.*)"><img')
-        findUser = re.compile(r'"user">(.*)</h1>')
-
-        userName = findUser.search(str(userLink)).group(1)
-
-        if not os.path.isdir((str(userID) + ' ' + userName)):
-            os.mkdir((str(userID) + ' ' + userName))
-
-        for item in illustLink:
-            illustID = findIllustID.search(str(item)).group(1)
-            filePath = str(os.path.abspath(str(userID)) + ' ' + userName)
-            filePath += "\\" + illustID + ".jpg"
-            filePath2 = str(os.path.abspath(str(userID)) + ' ' + userName)
-            filePath2 += "\\" + illustID + ".png"
-            if os.path.exists(filePath) or os.path.exists(filePath2) or str(illustID) in downloaded:
-                print (illustID, " Already Saved")
-            else:
-                # print(illustID, " Added")
-                allIllustID.append(illustID)
-
         if len(parser.select('div.pager-container span.next')[0]) != 0:
             nextPage = parser.select('div.pager-container span.next')[0]
             findNextPage = re.compile(r'<a class="_button" href="(.*)" rel="next".*')
-            nextPageUrl = 'http://www.pixiv.net/member_illust.php' + html.parser.HTMLParser().unescape(findNextPage.search(str(nextPage)).group(1))
+            nextPageUrl = 'http://www.pixiv.net/member_illust.php' + html.parser.HTMLParser().unescape(
+                findNextPage.search(str(nextPage)).group(1))
             return nextPageUrl
         else:
             return False
-    except Exception as e:
-        print(e)
-
-
-def isFinish():
-    global finished
-    finishLock.acquire()
-    finished += 1
-    print('Progress:', finished, '/', totalIllust)
-    finishLock.release()
-    if finished == totalIllust:
-        print('Finished')
+    except:
+        return False
 
 
 def downloadAll():
     urlOpener.addheaders = [('Referer', r'http://www.pixiv.net/')]
-    for illustID in allIllustID:
-        connectionLock.acquire()
-        t = threading.Thread(target=downloadIllust, args=(illustID,))
+    th = []
+    for i in range(5):
+        t = threading.Thread(target=downloadIllust)
         t.start()
+        th.append(t)
+    for i in th:
+        i.join()
+    print('Finished')
 
-def ownPrint(info):
-    printLock.acquire()
-    print (info)
-    printLock.release()
 
-def addDownloaded(illustID):
-    global downloaded
-    downloadedLock.acquire()
-    downloaded.append(illustID)
-    downloadedLock.release()
-
-def downloadIllust(illustID):
-    illust = parseIllust(illustID)
-
-    try:
-        if(illust['pages'] == ''):
-            fileName = illust['illustID'] + '.' + illust['illustExt']
-            filePath = str(os.path.abspath(illust['userID']) + ' ' + illust['userName'])
-            filePath += "\\" + fileName
-            if not os.path.exists(filePath):
+def downloadIllust():
+    global curIllustNumber
+    while not illustQuene.empty():
+        curIllust = illustQuene.get()
+        illust = parseIllust(curIllust)
+        try:
+            if (illust and illust['pages'] == ''):
+                fileName = illust['illustID'] + '.' + illust['illustExt']
+                filePath = curFilePath
+                filePath += "\\" + fileName
                 parseIllustUrl = illust['illust128'][:illust['illust128'].find(r'mobile/')]
                 parseIllustUrl += fileName
+                print('Getting', parseIllustUrl)
 
-                ownPrint('Getting {0}'.format(parseIllustUrl))
-
-                # tempparseIllust = urlOpener.open(parseIllustUrl)
-                # fileSize = tempparseIllust.getheader('Content-Length').strip()
-                # print ("Downloading: %s Bytes: %s" % (fileName, fileSize))
+                #tempparseIllust = urlOpener.open(parseIllustUrl)
+                #fileSize = tempparseIllust.getheader('Content-Length').strip()
+                #print ("Downloading: %s Bytes: %s" % (fileName, fileSize))
                 tempFile = urlOpener.open(parseIllustUrl).read()
                 with open(filePath, 'wb') as file:
                     file.write(tempFile)
-                    ownPrint('{0} Saved'.format(fileName))
+
+                print(fileName, 'Saved')
+
+            else:
+                pages = int(illust['pages'])
+                for i in range(pages):
+                    fileName = illust['illustID'] + '_p' + str(i) + '.' + illust['illustExt']
+                    filePath = curFilePath
+                    filePath += "\\" + fileName
+                    if not os.path.exists(filePath):
+                        parseIllustUrl = illust['illust128'][:illust['illust128'].find(r'mobile/')]
+                        parseIllustUrl += fileName
+
+                        print('Getting', parseIllustUrl)
+
+                        #tempparseIllust = urlOpener.open(parseIllustUrl)
+                        #fileSize = tempparseIllust.getheader('Content-Length').strip()
+                        #print ("Downloading: %s Bytes: %s" % (fileName, fileSize))
+                        tempFile = urlOpener.open(parseIllustUrl).read()
+                        with open(filePath, 'wb') as file:
+                            file.write(tempFile)
+
+                        print(fileName, 'Saved')
+
+                with fileLock:
+                    with open("downloaded.txt", "a") as myfile:
+                        myfile.write(curIllust + '\n')
+
+            downloadProgress()
+            downloaded.append(curIllust)
+
+        except  Exception as e:
+            print(e)
+            illustQuene.put(curIllust)
+
+        finally:
+            illustQuene.task_done()
 
 
-        else:
-            pages = int(illust['pages'])
-            for i in range(pages):
-                fileName = illust['illustID'] + '_p' + str(i) + '.' + illust['illustExt']
-                filePath = str(os.path.abspath(illust['userID']) + ' ' + illust['userName'])
-                filePath += "\\" + fileName
-                if not os.path.exists(filePath):
-                    parseIllustUrl = illust['illust128'][:illust['illust128'].find(r'mobile/')]
-                    parseIllustUrl += fileName
-
-                    ownPrint('Getting {0}'.format(parseIllustUrl))
-
-                    # tempparseIllust = urlOpener.open(parseIllustUrl)
-                    # fileSize = tempparseIllust.getheader('Content-Length').strip()
-                    # print ("Downloading: %s Bytes: %s" % (fileName, fileSize))
-                    tempFile = urlOpener.open(parseIllustUrl).read()
-                    with open(filePath, 'wb') as file:
-                        file.write(tempFile)
-
-                    ownPrint('{0} Saved'.format(fileName))
-
-
-        addDownloaded(illustID)
-        writeDownloaded()
-    except  Exception as e:
-        ownPrint(e)
-    finally:
-        isFinish()
-        connectionLock.release()
+def downloadProgress():
+    global curIllustNumber
+    with printLock:
+        print('Progress:', curIllustNumber, '/', totalIllust)
+        curIllustNumber += 1
 
 
 def parseIllust(illustID):
-    url = "http://spapi.pixiv.net/iphone/illust.php?illust_id=" + illustID
+    url = "http://spapi.pixiv.net/iphone/illust.php?PHPSESSID=" + PHPSESSID + "&illust_id=" + illustID
     htmlSrc = urlOpener.open(url).read().decode('utf-8')
+    if not htmlSrc:
+        return False
     reader = csv.reader(io.StringIO(htmlSrc))
-    finalList=list(reader)[0]
+    finalList = list(reader)[0]
     parseIllust = {}
     parseIllust['illustID'] = finalList[0]
     parseIllust['userID'] = finalList[1]
@@ -180,10 +191,11 @@ def parseIllust(illustID):
     parseIllust['software'] = finalList[14]
     parseIllust['vote'] = finalList[15]
     parseIllust['point'] = finalList[16]
-    parseIllust['views'] = finalList[17]
+    parseIllust['viewCount'] = finalList[17]
     parseIllust['description'] = finalList[18][1:]
     parseIllust['pages'] = finalList[19]
-    parseIllust['userLonginID'] = finalList[24]
+    parseIllust['bookmarks'] = finalList[22]
+    parseIllust['userLoginID'] = finalList[24]
     parseIllust['userProfileImageUrl'] = finalList[29]
     return parseIllust
 
@@ -195,40 +207,33 @@ def login():
         PixivID = input("ID:")
         password = input("Password:")
         post_data = {
-               'mode':'login',
-               'skip':'1'
-               }
+            'mode': 'login',
+            'skip': '1'
+        }
         post_data["pixiv_id"] = PixivID
         post_data["pass"] = password
-        request = urllib.request.Request('http://www.pixiv.net/login.php', urllib.parse.urlencode(post_data).encode(encoding='utf_8'))
+        request = urllib.request.Request('http://www.pixiv.net/login.php',
+                                         urllib.parse.urlencode(post_data).encode(encoding='utf_8'))
         urlOpener.open(request)
         cookiejar.save("cookie.txt")
     else:
         cookiejar.load("cookie.txt")
 
-def writeDownloaded():
-    file = open('downloaded.txt', 'w+')
-    for item in downloaded:
-        file.write('{0}\n'.format(item))
 
 def main():
-    info = " Pixiv Downloader  Ver 1.1.1 by:KK "
-    print (info.center(80, '#'))
+    info = " Pixiv Downloader  Ver 1.2 by:KK "
+    print(info.center(80, '#'))
     login()
-    #userID = 240431
-    userID = input("输入作者Pixiv ID:")
-    error=0
-    try:
-        int(userID)
-    except:
-        print('ID格式错误')
-        error=1
-    if not error:
-        getAllIllustID(userID)
-        if totalIllust == 0:
-            print('Finished')
-        else:
-            downloadAll()
+    global PHPSESSID
+    for i in cookiejar:
+        if i.name == "PHPSESSID":
+            PHPSESSID = i.value
+
+    #IDNumber = 141132
+    IDNumber = input("输入作者Pixiv ID:")
+    for i in IDNumber.split():
+        getAllIllustID(i)
+        downloadAll()
 
 
 if __name__ == '__main__':
