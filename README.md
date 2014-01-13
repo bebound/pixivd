@@ -5,10 +5,16 @@
 
 Python3写成的Pixiv批量下载工具 目前可以批量下载画师所有作品
 
-GUI版本还在不断修改中
+GUI版本暂停开发 移至pyqt文件夹
+
+请使用Pixiv Downloader.py下载
 
 
 ## 截图
+
+NoGuiVersion
+
+![img](https://raw.github.com/bebound/Pixiv/master/ScreenShot/1.png)
 
 GuiVersion(beta)
 
@@ -16,19 +22,13 @@ GuiVersion(beta)
 
 ![img](https://raw.github.com/bebound/Pixiv/master/ScreenShot/GUI1.png)
 
-NoGuiVersion
-
-![img](https://raw.github.com/bebound/Pixiv/master/ScreenShot/1.png)
-
-
-## EXE下载链接
-
-[NoGuiVersion](https://mega.co.nz/#!yQlX2KID!YLGnOwLTg-Qm1JaGFrvkzSEdBddwHnVdB480E2_5obc
-)
-
-
 
 ## 更新日志
+
+###NoGUI v 1.2.1
+
+- 下载地址变更
+- 使用新的api获取画师作品列表
 
 ###GUI v0.9
 
@@ -57,9 +57,10 @@ NoGuiVersion
 
 - 初版
 
+
 ## 问题
 
-- 莫名卡死
+- GUI版本卡死
 - 频繁写入download.txt
 
 ## TODO
