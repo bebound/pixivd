@@ -4,7 +4,6 @@ import re
 import os
 import csv
 import io
-import html.parser
 from bs4 import BeautifulSoup
 import threading
 import queue
@@ -58,8 +57,15 @@ def getAllIllustID(userID):
         curUserName = downloadIllustList[0]['userName']
         global curFilePath
         curFilePath = str(os.path.abspath(userID) + ' ' + curUserName)
-        if not os.path.isdir(userID + ' ' + curUserName):
-            os.mkdir(userID + ' ' + curUserName)
+        for dirPath, dirNames, fileNames in os.walk('.'):
+            for dir in dirNames:
+                if dir.split(' ')[0] == userID:
+                    if not os.path.abspath(dir) == curFilePath:
+                        os.rename(dir, curFilePath)
+            break
+
+        if not os.path.exists(curFilePath):
+            os.makedirs(curFilePath)
 
     global totalIllust, curIllustNumber
     totalIllust = len(downloadIllustList)
@@ -88,8 +94,7 @@ def downloadIllust():
         try:
             if (illust and illust['pages'] == ''):
                 fileName = illust['illustID'] + '.' + illust['illustExt']
-                filePath = curFilePath
-                filePath += "\\" + fileName
+                filePath = os.path.join(curFilePath, fileName)
 
                 if not os.path.exists(filePath):
                     trueIllustUrl = illust['illust480'][:illust['illust480'].find(r'mobile/')]
@@ -105,8 +110,7 @@ def downloadIllust():
                 pages = int(illust['pages'])
                 for i in range(pages):
                     fileName = illust['illustID'] + '_p' + str(i) + '.' + illust['illustExt']
-                    filePath = curFilePath
-                    filePath += "\\" + fileName
+                    filePath = os.path.join(curFilePath, fileName)
                     if not os.path.exists(filePath):
                         trueIllustUrl = illust['illust480'][:illust['illust480'].find(r'mobile/')]
                         trueIllustUrl += fileName
@@ -185,7 +189,7 @@ def login():
 
 
 def main():
-    info = " Pixiv Downloader  Ver 1.2.1 by:KK "
+    info = " Pixiv Downloader  Ver 1.2.2 by:KK "
     print(info.center(80, '#'))
     if os.path.exists(r"cookie.txt"):
         cookiejar.load("cookie.txt")
