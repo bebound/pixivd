@@ -26,7 +26,7 @@ GuiVersion(beta)
 ## 更新日志
 
 ###NoGUI v 1.2.2
-- 路径判断改为ID 应对作者改名
+- 路径判断改为ID 对应作者改名
 
 ###NoGUI v 1.2.1
 
