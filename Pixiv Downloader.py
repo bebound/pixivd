@@ -1,10 +1,8 @@
 import urllib
 import http.cookiejar
-import re
 import os
 import csv
 import io
-from bs4 import BeautifulSoup
 import threading
 import queue
 import http.client
@@ -93,12 +91,17 @@ def downloadIllust():
         illust = illustQuene.get()
         try:
             if (illust and illust['pages'] == ''):
-                fileName = illust['illustID'] + '.' + illust['illustExt']
-                filePath = os.path.join(curFilePath, fileName)
-
-                if not os.path.exists(filePath):
+                if 'mobile' in illust['illust480']:
                     trueIllustUrl = illust['illust480'][:illust['illust480'].find(r'mobile/')]
+                    fileName = illust['illustID'] + '.' + illust['illustExt']
                     trueIllustUrl += fileName
+                else:
+                    trueIllustUrl = illust['illust480'][:illust['illust480'].find(r'_480mw')-len(illust['illustID'])]
+                    trueIllustUrl=trueIllustUrl.replace('c/480x960/img-master/','img-original/')
+                    fileName=illust['illustID'] + '_p0.' + illust['illustExt']
+                    trueIllustUrl += fileName
+                filePath = os.path.join(curFilePath, fileName)
+                if not os.path.exists(filePath):
                     print('Getting', trueIllustUrl)
                     tempFile = urlOpener.open(trueIllustUrl).read()
                     with open(filePath, 'wb') as file:
@@ -109,11 +112,18 @@ def downloadIllust():
             else:
                 pages = int(illust['pages'])
                 for i in range(pages):
-                    fileName = illust['illustID'] + '_p' + str(i) + '.' + illust['illustExt']
-                    filePath = os.path.join(curFilePath, fileName)
-                    if not os.path.exists(filePath):
+                    if 'mobile' in illust['illust480']:
+                        fileName = illust['illustID'] + '_p' + str(i) + '.' + illust['illustExt']
                         trueIllustUrl = illust['illust480'][:illust['illust480'].find(r'mobile/')]
                         trueIllustUrl += fileName
+                    else:
+                        trueIllustUrl = illust['illust480'][:illust['illust480'].find(r'_480mw')-len(illust['illustID'])]
+                        trueIllustUrl=trueIllustUrl.replace('c/480x960/img-master/','img-original/')
+                        fileName=illust['illustID'] + '_p0.' + illust['illustExt']
+                        trueIllustUrl += fileName
+                    filePath = os.path.join(curFilePath, fileName)
+
+                    if not os.path.exists(filePath):
                         print('Getting', trueIllustUrl)
                         tempFile = urlOpener.open(trueIllustUrl).read()
                         with open(filePath, 'wb') as file:
@@ -130,6 +140,7 @@ def downloadIllust():
 
         except  Exception as e:
             print(e)
+            raise e
             illustQuene.put(illust)
 
         finally:
