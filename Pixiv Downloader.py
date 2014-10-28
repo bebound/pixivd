@@ -202,7 +202,7 @@ def get_real_url(illust):
             if 'mobile' in illust['illust480']:
                 yield old_url(illust, i)
             else:
-                yield old_url(illust, i)
+                yield new_url(illust, i)
 
 
 def add_downloadedtxt(illust):
