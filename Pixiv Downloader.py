@@ -170,6 +170,8 @@ def get_user_illust_list(user):
 
 
 def old_url(illust, page=None):
+    """change http://i2.pixiv.net/img38/img/luciahreat/mobile/37766477_480mw.jpg
+    to http://i2.pixiv.net/img38/img/luciahreat/37766477.jpg"""
     base_url = illust['illust480'][:illust['illust480'].find(r'mobile/')]
     if page is None:
         file_name = illust['illust_id'] + '.' + illust['illust_ext']
@@ -179,14 +181,18 @@ def old_url(illust, page=None):
 
 
 def new_url(illust, page=None):
-    base_url = illust['illust480'][:illust['illust480'].find(r'_480mw') - len(illust['illust_id'])]
-    if page is None:
+    """change http://i2.pixiv.net/c/480x960/img-master/img/2014/10/18/02/31/58/46605041_480mw.jpg
+     to http://i2.pixiv.net/img-original/img/2014/10/18/02/31/58/46605041_p0.jpg"""
+    if '_480mw' in illust['illust480']:
+        base_url = illust['illust480'][:illust['illust480'].find(r'_480mw') - len(illust['illust_id'])]
         base_url = base_url.replace('c/480x960/img-master/', 'img-original/')
-        file_name = illust['illust_id'] + '_p0.' + illust['illust_ext']
+        if page is None:
+            file_name = illust['illust_id'] + '_p0.' + illust['illust_ext']
+        else:
+            file_name = illust['illust_id'] + '_p' + str(page) + '.'+illust['illust_ext']
+        return base_url + file_name
     else:
-        base_url = base_url.replace('480x960', '1200x1200')
-        file_name = illust['illust_id'] + '_p' + str(page) + '_master1200.' + illust['illust_ext']
-    return base_url + file_name
+        return False
 
 
 def get_real_url(illust):
@@ -249,15 +255,16 @@ def download_threading(download_queue, file_path):
     while not download_queue.empty():
         illust = download_queue.get()
         for url in get_real_url(illust):
-            file_name = url.split('/')[-1]
-            cur_file_path = os.path.join(file_path, file_name)
-            if not os.path.exists(cur_file_path):
-                r = SESSION.get(url, headers=headers, stream=True)
-                if r.status_code == requests.codes.ok:
-                    temp_chunk = r.content
-                    with open(cur_file_path, 'wb') as f:
-                        f.write(temp_chunk)
-            print('Download complete:', file_name)
+            if url:
+                file_name = url.split('/')[-1]
+                cur_file_path = os.path.join(file_path, file_name)
+                if not os.path.exists(cur_file_path):
+                    r = SESSION.get(url, headers=headers, stream=True)
+                    if r.status_code == requests.codes.ok:
+                        temp_chunk = r.content
+                        with open(cur_file_path, 'wb') as f:
+                            f.write(temp_chunk)
+                print('Download complete:', file_name)
             add_downloadedtxt(illust)
         print_progress()
 
