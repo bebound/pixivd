@@ -14,9 +14,3 @@ GUI version is discontinued, you can find it in `pyqt` folder
 Pixiv Downloader.py
 
 ![img](https://raw.github.com/bebound/Pixiv/master/ScreenShot/1.png)
-
-GuiVersion(beta)
-
-![img](https://raw.github.com/bebound/Pixiv/master/ScreenShot/GUI2.png)
-
-![img](https://raw.github.com/bebound/Pixiv/master/ScreenShot/GUI1.png)
