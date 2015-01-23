@@ -1,14 +1,9 @@
 #!/usr/bin/env python3
-import csv
 import datetime
-import io
+import getpass
 import math
 import os
 import pickle
-import queue
-import re
-import sys
-import threading
 
 import requests
 
@@ -75,7 +70,7 @@ class PixivApi:
         """
         while True:
             pixiv_id = input('Input your pixiv id:')
-            password = input('Input your pixiv password:')
+            password = getpass.getpass('Input your pixiv password')
             s = requests.Session()
             data = {
                 'mode': 'login',
