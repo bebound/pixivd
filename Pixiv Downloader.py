@@ -16,6 +16,7 @@ _queue_size = 0
 _finished_download = 0
 _FILE_LOCK = threading.Lock()
 _CREATE_FOLDER_LOCK = threading.Lock()
+_PROGRESS_LOCK = threading.Lock()
 
 
 def skip_download(illusts):
@@ -58,16 +59,21 @@ def add_downloadedtxt(illust):
 
 
 def print_progress():
-    global _finished_download
-    _finished_download += 1
-    print(_finished_download, '/', _queue_size)
+    with _PROGRESS_LOCK:
+        global _finished_download
+        _finished_download += 1
+
+        number_of_sharp = round(_finished_download / _queue_size * 60)
+        number_of_space = 60 - number_of_sharp
+        sys.stdout.write('\r' + str(_finished_download) + '/' + str(
+            _queue_size) + '[' + '#' * number_of_sharp + ' ' * number_of_space + ']')
 
 
 def download_threading(download_queue, user, save_path='.'):
     headers = {'Referer': 'http://www.pixiv.net/'}
     while not download_queue.empty():
+        illust = download_queue.get()
         try:
-            illust = download_queue.get()
             for url in illust.original_urls:
                 file_name = url.split('/')[-1]
                 cur_file_path = os.path.join(save_path, file_name)
@@ -80,7 +86,6 @@ def download_threading(download_queue, user, save_path='.'):
                         temp_chunk = r.content
                         with open(cur_file_path, 'wb') as f:
                             f.write(temp_chunk)
-                print('Download complete:', file_name)
                 add_downloadedtxt(illust)
             print_progress()
         except Exception as e:
@@ -101,7 +106,7 @@ def start_and_wait_download_threadings(download_queue, user, save_path='.'):
     for t in th:
         t.join()
 
-    print('Fininsh')
+    print('\nFininsh')
 
 
 def download_illusts(data_list, user, save_path='.', add_user_folder=False):
