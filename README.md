@@ -2,7 +2,9 @@
 
 A simple tool to download all illustrations from specific illuster.
 
-GUI version is discontinued, you can find it in `pyqt` folder
+Download illustrations by **uers_id**, **daily ranking** or **history ranking**.
+
+(GUI version is discontinued, you can find it in `pyqt` folder)
 
 ## Requirement
 
