@@ -138,15 +138,16 @@ def download_illusts(data_list, user, save_path='.', add_user_folder=False):
 
 def download_by_user_id(user):
     current_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+    save_path = os.path.join(current_path, 'illustrations')
     user_id = input('Input the user id:')
     data_list = user.get_user_illusts(user_id)
-    download_illusts(data_list, user, current_path, True)
+    download_illusts(data_list, user, save_path, True)
 
 
 def download_by_ranking(user):
     today = str(datetime.date.today()).replace('-', '')
     current_path = os.path.dirname(os.path.abspath(sys.argv[0]))
-    save_path = os.path.join(current_path, today + ' ranking')
+    save_path = os.path.join(os.path.join(current_path, 'illustrations'), today + ' ranking')
     data_list = user.get_ranking_illusts(100)
     download_illusts(data_list, user, save_path)
 
@@ -154,7 +155,7 @@ def download_by_ranking(user):
 def download_by_history_ranking(user):
     date = input('Input the date:(eg:150101)')
     current_path = os.path.dirname(os.path.abspath(sys.argv[0]))
-    save_path = os.path.join(current_path, date + ' ranking')
+    save_path = os.path.join(os.path.join(current_path, 'illustrations'), date + ' ranking')
     data_list = user.get_history_ranking_illusts(100, date)
     download_illusts(data_list, user, save_path)
 
