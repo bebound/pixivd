@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 from abc import abstractmethod, ABCMeta
-import csv
-import io
 
-from utils import PivivUtils
+from utils import get_image_url_per_illust
 
 
 class PixivModel(object):
@@ -18,49 +16,48 @@ class PixivModel(object):
         pass
 
     @abstractmethod
-    def parse(self, data):
+    def from_data(self, data):
         """parse the data to a dict"""
         pass
 
 
 class PixivIllustModel(PixivModel):
+    @staticmethod
+    def extract_common_information(illust, data):
+        if 'work' in data:
+            illust.rank = str(data['rank'])
+            illust.previous_rank = str(data['previous_rank'])
+            data = data['work']
+        illust.id = str(data['id'])
+        illust.user_id = str(data['user']['id'])
+        illust.user_name = data['user']['name']
+        illust.title = data['title']
+        return illust
+
     @classmethod
-    def from_data(cls, data):
+    def from_data(cls, data_list):
         """parse data to dict contains illust information
 
         Return:
-            result: a dict contains illust information
+            result: a list of instance contains illust information
         """
-        data = data.replace('\x00', '')
-        reader = csv.reader(io.StringIO(data))
-        content = list(reader)[0]
-        illust = cls()
-        illust.illust_id = content[0]
-        illust.user_id = content[1]
-        illust.illust_ext = content[2]
-        illust.title = content[3]
-        illust.image_server = content[4]
-        illust.user_name = content[5]
-        illust.illust128 = content[6]
-        illust.illust480 = content[9]
-        illust.time = content[12]
-        illust.tags = content[13]
-        illust.software = content[14]
-        illust.vote = content[15]
-        illust.point = content[16]
-        illust.view_count = content[17]
-        illust.description = content[18][1:]
-        # pages '' if page is 0
-        illust.pages = content[19]
-        illust.bookmarks = content[22]
-        illust.comment = content[23]
-        illust.user_login_id = content[24]
-        # is_r18:0 is safe, 1 is R-18, 2 is R-18G
-        illust.is_r18 = content[26]
-        # novel_series_id:blank for illustrations and novels not part of a series
-        illust.novel_series_id = content[26]
-        illust.user_profile_image_url = content[29]
+        illusts = []
+        for data in data_list:
+            # ranking
+            if 'date' in data:
+                works = data['works']
+                for work in works:
+                    illust = cls()
+                    cls.extract_common_information(illust, work)
+                    image_urls = get_image_url_per_illust(work)
+                    illust.image_urls = image_urls
+                    illusts.append(illust)
 
-        original_urls = PivivUtils.get_original_links(illust)
-        illust.original_urls = original_urls
-        return illust
+            # user_illusts or illust
+            else:
+                illust = cls()
+                cls.extract_common_information(illust, data)
+                image_urls = get_image_url_per_illust(data)
+                illust.image_urls = image_urls
+                illusts.append(illust)
+        return illusts
