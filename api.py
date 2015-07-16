@@ -11,15 +11,18 @@ from utils import Pixiv_Get_Error
 class PixivApi:
     """
     Attribution:
-        session
+        session_id
         access_token
         user_id: str, login user id
     """
-    session = None
+    session_id = None
     access_token = None
     user_id = ''
     image_sizes = ','.join(['px_128x128', 'px_480mw', 'small', 'medium', 'large'])
     profile_image_sizes = ','.join(['px_170x170', 'px_50x50'])
+
+    def __init__(self):
+        self.session=''
 
     def _request_pixiv(self, method, url, headers=None, params=None, data=None):
         """
@@ -35,10 +38,14 @@ class PixivApi:
                                   'Cookie': 'PHPSESSID={}'.format(self.session_id)})
         if headers:
             pixiv_headers.update(headers)
+
+        if not self.session:
+            self.session=requests.Session()
+
         if method == 'GET':
-            return requests.get(url, headers=pixiv_headers, params=params)
+            return self.session.get(url, headers=pixiv_headers, params=params)
         elif method == 'POST':
-            return requests.post(url, headers=pixiv_headers, params=params, data=data)
+            return self.session.post(url, headers=pixiv_headers, params=params, data=data)
         else:
             raise RuntimeError('Unknown Method:', method)
 
