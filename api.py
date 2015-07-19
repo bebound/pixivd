@@ -20,6 +20,7 @@ class PixivApi:
     user_id = ''
     image_sizes = ','.join(['px_128x128', 'px_480mw', 'small', 'medium', 'large'])
     profile_image_sizes = ','.join(['px_170x170', 'px_50x50'])
+    timeout=10
 
     def __init__(self):
         self.session=''
@@ -43,9 +44,9 @@ class PixivApi:
             self.session=requests.Session()
 
         if method == 'GET':
-            return self.session.get(url, headers=pixiv_headers, params=params)
+            return self.session.get(url, headers=pixiv_headers, params=params, timeout=self.timeout)
         elif method == 'POST':
-            return self.session.post(url, headers=pixiv_headers, params=params, data=data)
+            return self.session.post(url, headers=pixiv_headers, params=params, data=data, timeout=self.timeout)
         else:
             raise RuntimeError('Unknown Method:', method)
 
@@ -382,3 +383,6 @@ class PixivApi:
 
         r = self._request_pixiv('GET', url, params=params)
         return self.parse_result(r)
+
+    def set_timeout(self,timeout):
+        self.timeout=timeout
