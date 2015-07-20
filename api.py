@@ -75,7 +75,7 @@ class PixivApi:
         respond = json.loads(r.text)
 
         self.access_token = respond['response']['access_token']
-        self.user_id = respond['response']['user']['id']
+        self.user_id = str(respond['response']['user']['id'])
 
         cookie = r.headers['Set-Cookie']
         self.session_id = re.search(r'PHPSESSID=(.*?);', cookie).group(1)

@@ -43,7 +43,6 @@ class PixivIllustModel(PixivModel):
         illust.scored_count=data['stats']['scored_count']
         illust.public_favorited_count=data['stats']['favorited_count']['public']
         illust.private_favorited_count=data['stats']['favorited_count']['private']
-        illust.user_id=data['user']['id']
         illust.user_name=data['user']['name']
         illust.user_account=data['user']['account']
         illust.user_profile_image_urls=data['user']['profile_image_urls']
