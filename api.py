@@ -84,7 +84,7 @@ class PixivApi:
         if not self.access_token:
             print('Please login')
             username = input('Please input your Pixiv username:')
-            password = getpass.getpass('Please input your Pixiv username:')
+            password = getpass.getpass('Please input your Pixiv password:')
             self.login(username, password)
 
     def parse_result(self, r):
