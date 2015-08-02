@@ -20,10 +20,10 @@ class PixivApi:
     user_id = ''
     image_sizes = ','.join(['px_128x128', 'px_480mw', 'small', 'medium', 'large'])
     profile_image_sizes = ','.join(['px_170x170', 'px_50x50'])
-    timeout=10
+    timeout = 10
 
     def __init__(self):
-        self.session=''
+        self.session = ''
 
     def _request_pixiv(self, method, url, headers=None, params=None, data=None):
         """
@@ -41,7 +41,7 @@ class PixivApi:
             pixiv_headers.update(headers)
 
         if not self.session:
-            self.session=requests.Session()
+            self.session = requests.Session()
 
         if method == 'GET':
             return self.session.get(url, headers=pixiv_headers, params=params, timeout=self.timeout)
@@ -267,6 +267,7 @@ class PixivApi:
                 }
             ]
         """
+        self.login_required()
         url = 'https://public-api.secure.pixiv.net/v1/works/{}.json'.format(illust_id)
 
         params = {
@@ -384,5 +385,5 @@ class PixivApi:
         r = self._request_pixiv('GET', url, params=params)
         return self.parse_result(r)
 
-    def set_timeout(self,timeout):
-        self.timeout=timeout
+    def set_timeout(self, timeout):
+        self.timeout = timeout

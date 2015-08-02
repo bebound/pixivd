@@ -35,23 +35,24 @@ class PixivIllustModel(PixivModel):
         illust.title = data['title']
         illust.small = data['image_urls']['small']
         illust.medium = data['image_urls']['medium']
+        illust.large = data['image_urls']['large']
         illust.px_480mw = data['image_urls']['px_480mw']
         illust.px_128x128 = data['image_urls']['px_128x128']
-        illust.views_count=data['stats']['views_count']
-        illust.commented_count=data['stats']['commented_count']
-        illust.score=data['stats']['score']
-        illust.scored_count=data['stats']['scored_count']
-        illust.public_favorited_count=data['stats']['favorited_count']['public']
-        illust.private_favorited_count=data['stats']['favorited_count']['private']
-        illust.user_name=data['user']['name']
-        illust.user_account=data['user']['account']
-        illust.user_profile_image_urls=data['user']['profile_image_urls']
-        illust.sanity_level=data['sanity_level']
-        illust.created_time=data['created_time']
-        illust.page_count=data['page_count']
-        illust.is_manga=data['is_manga']
-        illust.caption=data['caption']
-        illust.tags=data['tags']
+        illust.views_count = data['stats']['views_count']
+        illust.commented_count = data['stats']['commented_count']
+        illust.score = data['stats']['score']
+        illust.scored_count = data['stats']['scored_count']
+        illust.public_favorited_count = data['stats']['favorited_count']['public']
+        illust.private_favorited_count = data['stats']['favorited_count']['private']
+        illust.user_name = data['user']['name']
+        illust.user_account = data['user']['account']
+        illust.user_profile_image_urls = data['user']['profile_image_urls']
+        illust.sanity_level = data['sanity_level']
+        illust.created_time = data['created_time']
+        illust.page_count = data['page_count']
+        illust.is_manga = data['is_manga']
+        illust.caption = data['caption']
+        illust.tags = data['tags']
 
         return illust
 
@@ -82,7 +83,6 @@ class PixivIllustModel(PixivModel):
         illust.image_urls = image_urls
         return illust
 
-
     @classmethod
     def from_data(cls, data_list):
         """parse data to dict contains illust information
@@ -96,12 +96,11 @@ class PixivIllustModel(PixivModel):
             if cls.is_ranking(data):
                 works = data['works']
                 for work in works:
-                    illust=cls.create_illust_from_data(work)
+                    illust = cls.create_illust_from_data(work)
                     illusts.append(illust)
 
             # user_illusts or illust
             else:
-                illust=cls.create_illust_from_data(data)
+                illust = cls.create_illust_from_data(data)
                 illusts.append(illust)
         return illusts
-
