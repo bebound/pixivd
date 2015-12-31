@@ -10,11 +10,11 @@ Download illustrations by **user id**, **daily ranking** or **history ranking**.
 ---
 
 ## Features
-- [] Keep login sessions
-  -[x] Local storage
-  -[] Secure storage
+- [ ] Keep login sessions
+  - [x] Local storage
+  - [ ] Secure storage
 - [x] Update downloaded artists
-- [] Refresh downloaded artists
+- [ ] Refresh downloaded artists
 
 
 ## Requirement
