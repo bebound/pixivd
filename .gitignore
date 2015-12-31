@@ -1,5 +1,4 @@
 illustrations/
-
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm
 
 *.iml
@@ -149,3 +148,4 @@ Temporary Items
 .apdisk
 
 test.py
+/session
