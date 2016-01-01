@@ -150,7 +150,7 @@ class PixivApi:
             try:
                 self.login(username, password)
             except Exception as e:
-                print('Login failed:')
+                print('Login failed:', end="")
                 print(e)
                 if input('Retry? y/n') == 'y':
                     self.login_required()

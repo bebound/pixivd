@@ -135,8 +135,6 @@ def start_and_wait_download_trending(download_queue, save_path='.', add_rank=Fal
     for t in th:
         t.join()
 
-    print('\nFinished')
-
 
 def download_illustrations(data_list, save_path='.', add_user_folder=False, add_rank=False, refresh=False):
     illustrations = PixivIllustModel.from_data(data_list)
@@ -163,9 +161,11 @@ def download_illustrations(data_list, save_path='.', add_user_folder=False, add_
 
 def download_by_user_id(user):
     save_path = get_default_save_path()
-    user_id = input('Input the user id:')
-    data_list = user.get_user_illustrations(user_id)
-    download_illustrations(data_list, save_path, add_user_folder=True)
+    user_ids = input('Input the artist\'s id:(separate with space)')
+    for user_id in user_ids.split(' '):
+        print('Artists %s ??\n' % user_id)
+        data_list = user.get_user_illustrations(user_id)
+        download_illustrations(data_list, save_path, add_user_folder=True)
 
 
 def download_by_ranking(user):
@@ -200,11 +200,11 @@ def issue_exist(user, refresh):
                     get_id = get_id.group().replace(' ', '')
                     try:
                         print('Artists %s\n' % folder)
-                    except UnicodeError as e:
+                    except UnicodeError:
                         print('Artists %s ??\n' % get_id)
                     save_path = os.path.join(current_path, folder)
                     data_list = user.get_user_illustrations(get_id)
-                    download_illustrations(data_list, save_path,refresh=refresh)
+                    download_illustrations(data_list, save_path, refresh=refresh)
         except Exception as e:
             print(e)
     print('Existing artists %s is done\n' % ('refreshing' if refresh else 'updating'))
@@ -224,14 +224,14 @@ def main():
     while True:
         choose = input(
                 "Which do you want to:\n"
-                "\t1 From user id\n"
-                "\t2 From ranking\n"
-                "\t3 From history ranking\n"
-                "\t4 Update exist folder\n"
-                "\t5 Refresh exist folder\n"
+                "\t1 Download artists' illustrations\n"
+                "\t2 Download today ranking illustrations\n"
+                "\t3 Download history ranking illustrations\n"
+                "\t4 Update exist artists' folders\n"
+                "\t5 Refresh exist artists' folders\n"
                 "\te Exit the program\n")
-
         if choose in [str(i) for i in range(6)]:
+            print(options[choose].replace("_", " ").center(60, "#"))
             options[choose](user)
         elif choose == 'e':
             break

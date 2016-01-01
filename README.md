@@ -14,7 +14,7 @@ Download illustrations by **user id**, **daily ranking** or **history ranking**.
   - [x] Local storage
   - [ ] Secure storage
 - [x] Update downloaded artists
-- [ ] Refresh downloaded artists
+- [x] Refresh downloaded artists
 
 
 ## Requirement
