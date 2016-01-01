@@ -46,7 +46,7 @@ class PixivApi:
 
     def check_expired(self):
         url = 'https://public-api.secure.pixiv.net/v1/ios_magazine_banner.json'
-        print('Checking session', end="")
+        print('Checking session', end="", flush=True)
         r = self._request_pixiv('GET', url)
 
         valid = False
@@ -145,8 +145,8 @@ class PixivApi:
     def login_required(self):
         if not self.access_token:
             print('Please login')
-            username = input('Please input your Pixiv username:')
-            password = getpass.getpass('Please input your Pixiv password:')
+            username = input('username:')
+            password = getpass.getpass('password:')
             try:
                 self.login(username, password)
             except Exception as e:

@@ -14,14 +14,19 @@ from model import PixivIllustModel
 _THREADING_NUMBER = 5
 _queue_size = 0
 _finished_download = 0
-_FILE_LOCK = threading.Lock()
 _CREATE_FOLDER_LOCK = threading.Lock()
 _PROGRESS_LOCK = threading.Lock()
 
 
 def get_default_save_path():
     current_path = os.path.dirname(os.path.abspath(sys.argv[0]))
-    return os.path.join(current_path, 'illustrations')
+    file_path = os.path.join(current_path, 'illustrations')
+    if not os.path.exists(file_path):
+        with _CREATE_FOLDER_LOCK:
+            if not os.path.exists(os.path.dirname(file_path)):
+                os.makedirs(os.path.dirname(file_path))
+            os.makedirs(file_path)
+    return file_path
 
 
 def get_file_path(illustration, save_path='.'):
@@ -51,15 +56,6 @@ def get_file_path(illustration, save_path='.'):
     return file_path
 
 
-def add_downloaded_record(illustration):
-    """Append illustration to downloaded.txt
-    :param illustration:
-    """
-    with _FILE_LOCK:
-        with open('downloaded.txt', 'a') as f:
-            f.write(illustration.id + '\n')
-
-
 def print_progress():
     with _PROGRESS_LOCK:
         global _finished_download
@@ -84,7 +80,7 @@ def print_progress():
                     _queue_size) + ')')
 
 
-def download_threading(download_queue, save_path='.', add_rank=False):
+def download_threading(download_queue, save_path='.', add_rank=False, refresh=False):
     headers = {'Referer': 'http://www.pixiv.net/'}
     while not download_queue.empty():
         illustration = download_queue.get()
@@ -94,19 +90,27 @@ def download_threading(download_queue, save_path='.', add_rank=False):
                 if add_rank:
                     file_name = illustration.rank + ' - ' + file_name
                 file_path = os.path.join(save_path, file_name)
-                if not os.path.exists(file_path):
+                if not os.path.exists(file_path) or refresh:
                     with _CREATE_FOLDER_LOCK:
                         if not os.path.exists(os.path.dirname(file_path)):
+                            current_dir = os.path.dirname(file_path)
+                            while not os.path.exists(os.path.dirname(file_path)):
+                                if not os.path.exists(os.path.dirname(current_dir)):
+                                    current_dir = os.path.dirname(current_dir)
+                                else:
+                                    os.makedirs(current_dir)
+                                    current_dir = os.path.dirname(file_path)
                             os.makedirs(os.path.dirname(file_path))
                     r = requests.get(url, headers=headers, stream=True)
                     if r.status_code == requests.codes.ok:
                         temp_chunk = r.content
                         with open(file_path, 'wb') as f:
                             f.write(temp_chunk)
-                add_downloaded_record(illustration)
             print_progress()
         except KeyboardInterrupt:
             print('process cancelled')
+        except FileExistsError:
+            download_queue.put(illustration)
         except Exception as e:
             print(e)
             print(sys.exc_info()[0])
@@ -115,15 +119,16 @@ def download_threading(download_queue, save_path='.', add_rank=False):
             download_queue.task_done()
 
 
-def start_and_wait_download_trending(download_queue, save_path='.', add_rank=False):
+def start_and_wait_download_trending(download_queue, save_path='.', add_rank=False, refresh=False):
     """start download trending and wait till complete
+    :param refresh:
     :param add_rank:
     :param save_path:
     :param download_queue:
     """
     th = []
     for _ in range(_THREADING_NUMBER):
-        t = threading.Thread(target=download_threading, args=(download_queue, save_path, add_rank))
+        t = threading.Thread(target=download_threading, args=(download_queue, save_path, add_rank, refresh))
         t.start()
         th.append(t)
 
@@ -133,7 +138,7 @@ def start_and_wait_download_trending(download_queue, save_path='.', add_rank=Fal
     print('\nFinished')
 
 
-def download_illustrations(data_list, save_path='.', add_user_folder=False, add_rank=False):
+def download_illustrations(data_list, save_path='.', add_user_folder=False, add_rank=False, refresh=False):
     illustrations = PixivIllustModel.from_data(data_list)
 
     if len(illustrations) > 0:
@@ -150,7 +155,7 @@ def download_illustrations(data_list, save_path='.', add_user_folder=False, add_
         _queue_size = len(illustrations)
         _finished_download = 0
 
-        start_and_wait_download_trending(download_queue, save_path, add_rank)
+        start_and_wait_download_trending(download_queue, save_path, add_rank, refresh)
 
     else:
         print('There is no new illustration need to download')
@@ -178,15 +183,15 @@ def download_by_history_ranking(user):
 
 
 def update_exist(user):
-    issue_exist(user, True)
-
-
-def refresh_exist(user):
     issue_exist(user, False)
 
 
-def issue_exist(user, skip_down):
-    current_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+def refresh_exist(user):
+    issue_exist(user, True)
+
+
+def issue_exist(user, refresh):
+    current_path = get_default_save_path()
     for root, dirs, files in os.walk(current_path):
         try:
             for folder in dirs:
@@ -194,17 +199,15 @@ def issue_exist(user, skip_down):
                 if get_id:
                     get_id = get_id.group().replace(' ', '')
                     try:
-                        print('Update %s\n' % folder)
-                    except Exception as e:
-                        print(sys.exc_info()[0])
-                        print(e)
-                        print('Update %s ??\n' % get_id)
+                        print('Artists %s\n' % folder)
+                    except UnicodeError as e:
+                        print('Artists %s ??\n' % get_id)
                     save_path = os.path.join(current_path, folder)
                     data_list = user.get_user_illustrations(get_id)
-                    download_illustrations(data_list, save_path, False, skip_down)
+                    download_illustrations(data_list, save_path,refresh=refresh)
         except Exception as e:
             print(e)
-    print('Done\n')
+    print('Existing artists %s is done\n' % ('refreshing' if refresh else 'updating'))
 
 
 def main():
@@ -220,7 +223,7 @@ def main():
 
     while True:
         choose = input(
-                "Which do you want to do:\n"
+                "Which do you want to:\n"
                 "\t1 From user id\n"
                 "\t2 From ranking\n"
                 "\t3 From history ranking\n"
@@ -231,7 +234,7 @@ def main():
         if choose in [str(i) for i in range(6)]:
             options[choose](user)
         elif choose == 'e':
-            sys.exit()
+            break
         else:
             print('Wrong input!')
 
