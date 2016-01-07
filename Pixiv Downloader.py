@@ -231,7 +231,7 @@ def main():
                 "\t5 Refresh exist artists' folders\n"
                 "\te Exit the program\n")
         if choose in [str(i) for i in range(6)]:
-            print(options[choose].replace("_", " ").center(60, "#"))
+            #print(options[choose].replace("_", " ").center(60, "#"))
             options[choose](user)
         elif choose == 'e':
             break
