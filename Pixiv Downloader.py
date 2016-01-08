@@ -14,6 +14,10 @@ import requests
 from api import PixivApi
 from model import PixivIllustModel
 
+import gettext
+t = gettext.translation('messages', "locale")
+_ = t.gettext
+
 _THREADING_NUMBER = 5
 _queue_size = 0
 _finished_download = 0
@@ -85,20 +89,18 @@ def print_progress(download_queue):
         start = time.clock()
         number_of_sharp = round(_finished_download / _queue_size * 50)
         number_of_space = 50 - number_of_sharp
+        percent = _finished_download / _queue_size * 100
         if number_of_sharp < 21:
             sys.stdout.write('\r[' + '#' * number_of_sharp + ' ' * (number_of_space - 29) +
-                             ' %6.2f%% ' % (_finished_download / _queue_size * 100) + ' ' * 21 + '] (' + str(
-                    _finished_download) + '/' + str(_queue_size) + ')' + '[%s]' % get_speed(t0))
+                             ' %6.2f%% ' % percent + ' ' * 21 + '] (' + str(_finished_download) + '/' +
+                             str(_queue_size) + ')' + '[%s]' % get_speed(t0))
         elif number_of_sharp > 29:
-            sys.stdout.write(
-                    '\r[' + '#' * 21 + ' %6.2f%% ' % (_finished_download / _queue_size * 100) + '#' * (
-                        number_of_sharp - 29) + ' ' * number_of_space + '] (' + str(_finished_download) + '/' + str(
-                            _queue_size) + ')' + '[%s]' % get_speed(t0))
+            sys.stdout.write('\r[' + '#' * 21 + ' %6.2f%% ' % percent + '#' * (number_of_sharp - 29) +
+                             ' ' * number_of_space + '] (' + str(_finished_download) + '/' + str(_queue_size) + ')' +
+                             '[%s]' % get_speed(t0))
         else:
-            sys.stdout.write(
-                    '\r[' + '#' * 21 + ' %6.2f%% ' % (
-                        _finished_download / _queue_size * 100) + ' ' * 21 + '] (' + str(
-                            _finished_download) + '/' + str(_queue_size) + ')' + '[%s]' % get_speed(t0))
+            sys.stdout.write('\r[' + '#' * 21 + ' %6.2f%% ' % percent + ' ' * 21 + '] (' + str(_finished_download) +
+                             '/' + str(_queue_size) + ')' + '[%s]' % get_speed(t0))
 
 
 def download_threading(download_queue, save_path='.', add_rank=False, refresh=False):
@@ -137,13 +139,13 @@ def download_threading(download_queue, save_path='.', add_rank=False, refresh=Fa
                             else:
                                 f.write(r.content)
                     else:
-                        raise ConnectionError('Connection error: %s' % r.status_code)
+                        raise ConnectionError(_('Connection error: %s') % r.status_code)
             except KeyboardInterrupt:
-                print('process cancelled')
+                print(_('process cancelled'))
             except ConnectionError as e:
-                print('%s => %s download failed' % (e, file_name))
+                print(_('%s => %s download failed') % (e, file_name))
             except Exception as e:
-                print('%s => %s download error, retry' % (e, file_name))
+                print(_('%s => %s download error, retry') % (e, file_name))
                 if os.path.exists(file_path):
                     os.remove(file_path)
                 download_queue.put(copy.copy(illustration))
@@ -156,7 +158,6 @@ def download_threading(download_queue, save_path='.', add_rank=False, refresh=Fa
             _finished_download += 1
 
 
-
 def start_and_wait_download_trending(download_queue, save_path='.', add_rank=False, refresh=False):
     """start download trending and wait till complete
     :param refresh:
@@ -165,8 +166,8 @@ def start_and_wait_download_trending(download_queue, save_path='.', add_rank=Fal
     :param download_queue:
     """
     th = []
-    for _ in range(_THREADING_NUMBER + 1):
-        if not _:
+    for i in range(_THREADING_NUMBER + 1):
+        if not i:
             t = threading.Thread(target=print_progress, args=(download_queue,))
             t.start()
         else:
@@ -200,7 +201,7 @@ def download_illustrations(data_list, save_path='.', add_user_folder=False, add_
         check_files(illustrations, save_path, add_rank)
 
     if len(illustrations) > 0:
-        print('Start download, total illustrations', len(illustrations))
+        print(_('Start download, total illustrations '), len(illustrations))
 
         if add_user_folder:
             save_path = get_file_path(illustrations[0], save_path)
@@ -216,14 +217,14 @@ def download_illustrations(data_list, save_path='.', add_user_folder=False, add_
         start_and_wait_download_trending(download_queue, save_path, add_rank, refresh)
 
     else:
-        print('There is no new illustration need to download')
+        print(_('There is no new illustration need to download'))
 
 
 def download_by_user_id(user):
     save_path = get_default_save_path()
-    user_ids = input('Input the artist\'s id:(separate with space)')
+    user_ids = input(_('Input the artist\'s id:(separate with space)'))
     for user_id in user_ids.split(' '):
-        print('Artists %s ??\n' % user_id)
+        print(_('Artists %s ??\n') % user_id)
         data_list = user.get_user_illustrations(user_id)
         download_illustrations(data_list, save_path, add_user_folder=True)
 
@@ -236,9 +237,9 @@ def download_by_ranking(user):
 
 
 def download_by_history_ranking(user):
-    date = input('Input the date:(eg:2015-07-10)')
+    date = input(_('Input the date:(eg:2015-07-10)'))
     if not (re.search("^\d{4}-\d{2}-\d{2}", date)):
-        print('[invalid]')
+        print(_('[invalid]'))
         date = str(datetime.date.today())
     save_path = os.path.join(get_default_save_path(), date + ' ranking')
     data_list = user.get_ranking_illustrations(date=date, per_page=100, mode='daily')
@@ -262,9 +263,9 @@ def issue_exist(user, refresh):
                 if get_id:
                     get_id = get_id.group().replace(' ', '')
                     try:
-                        print('Artists %s\n' % folder)
+                        print(_('Artists %s\n') % folder)
                     except UnicodeError:
-                        print('Artists %s ??\n' % get_id)
+                        print(_('Artists %s ??\n') % get_id)
                     save_path = os.path.join(current_path, folder)
                     data_list = user.get_user_illustrations(get_id)
                     download_illustrations(data_list, save_path, refresh=refresh)
@@ -273,7 +274,7 @@ def issue_exist(user, refresh):
 
 
 def main():
-    print(' Pixiv Downloader 2.2 '.center(80, '#'))
+    print(_(' Pixiv Downloader 2.2 ').center(80, '#'))
     user = PixivApi()
     options = {
         '1': download_by_user_id,
@@ -284,22 +285,18 @@ def main():
     }
 
     while True:
-        choose = input(
-                'Which do you want to:\n'
-                '\t1 Download artists\' illustrations\n'
-                '\t2 Download today ranking illustrations\n'
-                '\t3 Download history ranking illustrations\n'
-                '\t4 Update exist artists\' folders\n'
-                '\t5 Refresh exist artists\' folders\n'
-                '\te Exit the program\n')
+        print(_('Which do you want to:'))
+        for i in sorted(options.keys()):
+            print('\t %s %s' % (i, _(options[i].__name__).replace('_', ' ')))
+        choose = input('\t e %s \n:' % _('exit'))
         if choose in [str(i) for i in range(6)]:
-            print((' ' + options[choose].__name__.replace('_', ' ') + ' ').center(60, '#') + '\n')
+            print((' ' + _(options[choose].__name__).replace('_', ' ') + ' ').center(60, '#') + '\n')
             options[choose](user)
-            print('\n' + (' ' + options[choose].__name__.replace('_', ' ') + ' finished ').center(60, '#') + '\n')
+            print('\n' + (' ' + _(options[choose].__name__).replace('_', ' ') + _(' finished ')).center(60, '#') + '\n')
         elif choose == 'e':
             break
         else:
-            print('Wrong input!')
+            print(_('Wrong input!'))
 
 
 if __name__ == '__main__':

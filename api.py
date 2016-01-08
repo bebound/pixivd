@@ -8,6 +8,11 @@ import sys
 
 from utils import Pixiv_Get_Error
 
+import gettext
+
+t = gettext.translation('messages', "locale")
+_ = t.gettext
+
 
 class PixivApi:
     """
@@ -46,23 +51,27 @@ class PixivApi:
 
     def check_expired(self):
         url = 'https://public-api.secure.pixiv.net/v1/ios_magazine_banner.json'
-        print('Checking session', end="", flush=True)
-        r = self._request_pixiv('GET', url)
+        print(_('Checking session'), end="", flush=True)
 
         valid = False
-        if r.status_code in [200, 301, 302]:
-            try:
-                respond = json.loads(r.text)
-                valid = respond['status'] == 'success'
-            except Exception as e:
-                print(e)
-                valid = False
-            finally:
-                pass
+        try:
+            r = self._request_pixiv('GET', url)
+
+            if r.status_code in [200, 301, 302]:
+                try:
+                    respond = json.loads(r.text)
+                    valid = respond['status'] == 'success'
+                except Exception as e:
+                    print(e)
+                    valid = False
+                finally:
+                    pass
+        except Exception as e:
+            print(e.__name__)
         if valid:
-            print(' [VALID]')
+            print(_(' [VALID]'))
         else:
-            print(' [EXPIRED]')
+            print(_(' [EXPIRED]'))
             self.access_token = None
         return valid
 
@@ -97,13 +106,15 @@ class PixivApi:
 
         if not self.session:
             self.session = requests.Session()
-
-        if method == 'GET':
-            return self.session.get(url, headers=pixiv_headers, params=params, timeout=self.timeout)
-        elif method == 'POST':
-            return self.session.post(url, headers=pixiv_headers, params=params, data=data, timeout=self.timeout)
-        else:
-            raise RuntimeError('Unknown Method:', method)
+        try:
+            if method == 'GET':
+                return self.session.get(url, headers=pixiv_headers, params=params, timeout=self.timeout)
+            elif method == 'POST':
+                return self.session.post(url, headers=pixiv_headers, params=params, data=data, timeout=self.timeout)
+            else:
+                raise RuntimeError(_('Unknown Method:'), method)
+        except Exception as e:
+            raise RuntimeError(_('[ERROR] connection failed!'), e)
 
     def login(self, username, password):
         """
@@ -140,13 +151,13 @@ class PixivApi:
             self.save_session()
 
         else:
-            raise RuntimeError('[ERROR] connection failed!', r.status_code)
+            raise RuntimeError(_('[ERROR] connection failed!'), r.status_code)
 
     def login_required(self):
         if not self.access_token:
-            print('Please login')
-            username = input('username:')
-            password = getpass.getpass('password:')
+            print(_('Please login'))
+            username = input(_('username:'))
+            password = getpass.getpass(_('password:'))
             try:
                 self.login(username, password)
             except Exception as e:
