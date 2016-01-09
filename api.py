@@ -67,7 +67,7 @@ class PixivApi:
                 finally:
                     pass
         except Exception as e:
-            print(e.__name__)
+            print(e)
         if valid:
             print(_(' [VALID]'))
         else:

@@ -274,7 +274,7 @@ def issue_exist(user, refresh):
 
 
 def main():
-    print(_(' Pixiv Downloader 2.2 ').center(80, '#'))
+    print(_(' Pixiv Downloader 2.2 ').center(77, '#'))
     user = PixivApi()
     options = {
         '1': download_by_user_id,
