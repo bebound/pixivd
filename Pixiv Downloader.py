@@ -14,11 +14,9 @@ import requests
 from api import PixivApi
 from model import PixivIllustModel
 
-import gettext
-t = gettext.translation('messages', "locale")
-_ = t.gettext
+from i18n import i18n as _
 
-_THREADING_NUMBER = 5
+_THREADING_NUMBER = 15
 _queue_size = 0
 _finished_download = 0
 _CREATE_FOLDER_LOCK = threading.Lock()
@@ -72,9 +70,8 @@ def get_speed(t0):
         _Global_Download = 0
     speed = down // t0
     if speed == 0:
-        return '0 /s'
-    speed /= 8
-    units = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB']
+        return '%8.2f /s' % 0
+    units = ['bytes', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB']
     unit = math.floor(math.log(speed, 1024.0))
     speed /= math.pow(1024.0, unit)
     return '%6.2f %s/s' % (speed, units[unit])
@@ -93,14 +90,14 @@ def print_progress(download_queue):
         if number_of_sharp < 21:
             sys.stdout.write('\r[' + '#' * number_of_sharp + ' ' * (number_of_space - 29) +
                              ' %6.2f%% ' % percent + ' ' * 21 + '] (' + str(_finished_download) + '/' +
-                             str(_queue_size) + ')' + '[%s]' % get_speed(t0))
+                             str(_queue_size) + ')' + '[%s]  ' % get_speed(t0))
         elif number_of_sharp > 29:
             sys.stdout.write('\r[' + '#' * 21 + ' %6.2f%% ' % percent + '#' * (number_of_sharp - 29) +
                              ' ' * number_of_space + '] (' + str(_finished_download) + '/' + str(_queue_size) + ')' +
-                             '[%s]' % get_speed(t0))
+                             '[%s]  ' % get_speed(t0))
         else:
             sys.stdout.write('\r[' + '#' * 21 + ' %6.2f%% ' % percent + ' ' * 21 + '] (' + str(_finished_download) +
-                             '/' + str(_queue_size) + ')' + '[%s]' % get_speed(t0))
+                             '/' + str(_queue_size) + ')' + '[%s]  ' % get_speed(t0))
 
 
 def download_threading(download_queue, save_path='.', add_rank=False, refresh=False):
@@ -131,7 +128,7 @@ def download_threading(download_queue, save_path='.', add_rank=False, refresh=Fa
                         with open(file_path, 'wb') as f:
                             total_length = r.headers.get('content-length')
                             if total_length:
-                                for chunk in r.iter_content(1024):
+                                for chunk in r.iter_content(4096):
                                     f.write(chunk)
                                     with _SPEED_LOCK:
                                         global _Global_Download
@@ -215,7 +212,7 @@ def download_illustrations(data_list, save_path='.', add_user_folder=False, add_
         _finished_download = 0
         _Global_Download = 0
         start_and_wait_download_trending(download_queue, save_path, add_rank, refresh)
-
+        print()
     else:
         print(_('There is no new illustration need to download'))
 
@@ -256,21 +253,37 @@ def refresh_exist(user):
 
 def issue_exist(user, refresh):
     current_path = get_default_save_path()
-    for root, dirs, files in os.walk(current_path):
-        try:
-            for folder in dirs:
+    for folder in os.listdir(current_path):
+        if os.path.isdir(os.path.join(current_path,folder)):
+            try:
                 get_id = re.search('^\d+ ', folder)
                 if get_id:
                     get_id = get_id.group().replace(' ', '')
                     try:
-                        print(_('Artists %s\n') % folder)
+                        print(_('Artists %s\n') % folder,end='')
                     except UnicodeError:
-                        print(_('Artists %s ??\n') % get_id)
+                        print(_('Artists %s ??\n') % get_id,end='')
                     save_path = os.path.join(current_path, folder)
                     data_list = user.get_user_illustrations(get_id)
                     download_illustrations(data_list, save_path, refresh=refresh)
-        except Exception as e:
-            print(e)
+            except Exception as e:
+                print(e)
+
+
+def remove_repeat(user):
+    choice = input(_('Dangerous Action: continue?(y/n)'))
+    if choice=='y':
+        current_path = get_default_save_path()
+        for folder in os.listdir(current_path):
+            if os.path.isdir(os.path.join(current_path,folder)):
+                get_id = re.search('^\d+ ', folder)
+                if get_id:
+                    path = os.path.join(current_path, folder)
+                    for f in os.listdir(path):
+                        illustration_id = re.search('^\d+\.', f)
+                        if illustration_id:
+                            if os.path.isfile(os.path.join(path,illustration_id.string.replace('.','_p0.'))):
+                                os.remove(os.path.join(path,f))
 
 
 def main():
@@ -281,7 +294,8 @@ def main():
         '2': download_by_ranking,
         '3': download_by_history_ranking,
         '4': update_exist,
-        '5': refresh_exist
+        '5': refresh_exist,
+        '6': remove_repeat
     }
 
     while True:
@@ -289,7 +303,7 @@ def main():
         for i in sorted(options.keys()):
             print('\t %s %s' % (i, _(options[i].__name__).replace('_', ' ')))
         choose = input('\t e %s \n:' % _('exit'))
-        if choose in [str(i) for i in range(6)]:
+        if choose in [str(i) for i in range(len(options)+1)]:
             print((' ' + _(options[choose].__name__).replace('_', ' ') + ' ').center(60, '#') + '\n')
             options[choose](user)
             print('\n' + (' ' + _(options[choose].__name__).replace('_', ' ') + _(' finished ')).center(60, '#') + '\n')

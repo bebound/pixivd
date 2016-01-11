@@ -8,10 +8,7 @@ import sys
 
 from utils import Pixiv_Get_Error
 
-import gettext
-
-t = gettext.translation('messages', "locale")
-_ = t.gettext
+from i18n import i18n as _
 
 
 class PixivApi:
@@ -30,6 +27,8 @@ class PixivApi:
     image_sizes = ','.join(['px_128x128', 'px_480mw', 'small', 'medium', 'large'])
     profile_image_sizes = ','.join(['px_170x170', 'px_50x50'])
     timeout = 10
+    username = ''
+    password = ''
 
     def __init__(self):
         if os.path.exists('session'):
@@ -84,7 +83,7 @@ class PixivApi:
             }
             json.dump(data, f)
 
-    def _request_pixiv(self, method, url, headers=None, params=None, data=None):
+    def _request_pixiv(self, method, url, headers=None, params=None, data=None, retry=3):
         """
         handle all url request
 
@@ -113,8 +112,11 @@ class PixivApi:
                 return self.session.post(url, headers=pixiv_headers, params=params, data=data, timeout=self.timeout)
             else:
                 raise RuntimeError(_('Unknown Method:'), method)
-        except Exception as e:
-            raise RuntimeError(_('[ERROR] connection failed!'), e)
+        except Exception:
+            if retry > 0:
+                return _request_pixiv(retry=retry-1);
+            else:
+                raise RuntimeError(_('[ERROR] connection failed!'), e)
 
     def login(self, username, password):
         """
@@ -149,7 +151,9 @@ class PixivApi:
             cookie = r.headers['Set-Cookie']
             self.session_id = re.search(r'PHPSESSID=(.*?);', cookie).group(1)
             self.save_session()
-
+            #For relogin purpose
+            self.password = password
+            self.username = username
         else:
             raise RuntimeError(_('[ERROR] connection failed!'), r.status_code)
 
@@ -183,8 +187,10 @@ class PixivApi:
         data = json.loads(r.text)
         if data['status'] == 'success':
             return data['response']
-        else:
+        elif ['has_error']:
             raise Pixiv_Get_Error(r.url)
+        else:
+            raise RuntimeError(_('[ERROR] connection failed!'), r.url,data)
 
     def get_user_illustrations(self, user_id, per_page=9999, page=1):
         """
@@ -214,7 +220,15 @@ class PixivApi:
         }
 
         r = self._request_pixiv('GET', url, params=params)
-        return self.parse_result(r)
+        try:
+            return self.parse_result(r)
+        except Pixiv_Get_Error:
+            if self.username:
+                self.login(self.username,self.password)
+            else:
+                self.check_expired()
+            return self.get_user_illustrations(user_id, per_page, page)
+
 
     def get_illustration(self, illustration_id):
         """
