@@ -10,9 +10,9 @@ Download illustrations by **user id**, **daily ranking** or **history ranking**.
 ---
 
 ## Features
-- [ ] Keep login sessions
+- [x] Keep login sessions
   - [x] Local storage
-  - [ ] Secure storage
+  - [x] Secure storage (not memory safe)
 - [x] Update downloaded artists
 - [x] Refresh downloaded artists
 

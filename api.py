@@ -6,6 +6,8 @@ import re
 import requests
 import sys
 
+from AESCipher import AESCipher
+
 from utils import Pixiv_Get_Error
 
 from i18n import i18n as _
@@ -33,20 +35,23 @@ class PixivApi:
     def __init__(self):
         if os.path.exists('session'):
             if self.load_session():
+                self.login(self.username, self.password)
                 if self.check_expired():
                     return
         self.login_required()
 
     def load_session(self):
-        with open('session', 'r') as f:
-            loaded_session = None
-            try:
-                loaded_session = json.load(f)
-                self.access_token = loaded_session['access_token']
-                self.user_id = loaded_session['user_id']
-                self.session_id = loaded_session['session_id']
-            finally:
-                return loaded_session
+        loaded_session = None
+        cipher = AESCipher()
+        with open('session', 'rb') as f:
+            enc = f.read()
+        try:
+            plain = cipher.decrypt(enc).decode()
+            loaded_session = json.loads(str(plain))
+            self.username = loaded_session['username']
+            self.password = loaded_session['passwd']
+        finally:
+            return loaded_session
 
     def check_expired(self):
         url = 'https://public-api.secure.pixiv.net/v1/ios_magazine_banner.json'
@@ -75,13 +80,14 @@ class PixivApi:
         return valid
 
     def save_session(self):
-        with open('session', 'w') as f:
-            data = {
-                'access_token': self.access_token,
-                'user_id': self.user_id,
-                'session_id': self.session_id
-            }
-            json.dump(data, f)
+        data = {
+            'username': self.username,
+            'passwd': self.password
+        }
+        cipher = AESCipher()
+        enc = cipher.encrypt(json.dumps(data))
+        with open('session', 'wb') as f:
+            f.write(enc)
 
     def _request_pixiv(self, method, url, headers=None, params=None, data=None, retry=3):
         """
@@ -112,9 +118,9 @@ class PixivApi:
                 return self.session.post(url, headers=pixiv_headers, params=params, data=data, timeout=self.timeout)
             else:
                 raise RuntimeError(_('Unknown Method:'), method)
-        except Exception:
+        except Exception as e:
             if retry > 0:
-                return _request_pixiv(retry=retry-1);
+                return self._request_pixiv(method, url, headers, params, data, retry=retry - 1)
             else:
                 raise RuntimeError(_('[ERROR] connection failed!'), e)
 
@@ -150,10 +156,10 @@ class PixivApi:
 
             cookie = r.headers['Set-Cookie']
             self.session_id = re.search(r'PHPSESSID=(.*?);', cookie).group(1)
-            self.save_session()
-            #For relogin purpose
+            # For relogin purpose
             self.password = password
             self.username = username
+            self.save_session()
         else:
             raise RuntimeError(_('[ERROR] connection failed!'), r.status_code)
 
@@ -190,7 +196,7 @@ class PixivApi:
         elif ['has_error']:
             raise Pixiv_Get_Error(r.url)
         else:
-            raise RuntimeError(_('[ERROR] connection failed!'), r.url,data)
+            raise RuntimeError(_('[ERROR] connection failed!'), r.url, data)
 
     def get_user_illustrations(self, user_id, per_page=9999, page=1):
         """
@@ -224,11 +230,10 @@ class PixivApi:
             return self.parse_result(r)
         except Pixiv_Get_Error:
             if self.username:
-                self.login(self.username,self.password)
+                self.login(self.username, self.password)
             else:
                 self.check_expired()
             return self.get_user_illustrations(user_id, per_page, page)
-
 
     def get_illustration(self, illustration_id):
         """
