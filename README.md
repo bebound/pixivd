@@ -1,24 +1,29 @@
 # Pixiv Downloader
 
-A simple tool to download all illustrations from specific illuster.
+A simple tool to download all illustrations from specific illustrator.
 
-Download illustrations by **uers_id**, **daily ranking** or **history ranking**.
-
-(GUI version is discontinued, you can find it in `pyqt` folder)
+Download illustrations by **uers\_id**, **daily ranking** or **history ranking**.
 
 ## Requirement
 
-[requests](http://docs.python-requests.org/)
+[requests][1]
 
 
 ## Screenshot
 
-Pixiv Downloader.py
+pixiv.py
 
-![img](https://raw.github.com/bebound/Pixiv/master/ScreenShot/2.png)
+![img][image-1]
 
 
 ## Credits
-- [Pixiv-API](https://github.com/twopon/Pixiv-API)
-- [PixivPy](https://github.com/upbit/pixivpy)
-- [pixiv api](https://danbooru.donmai.us/wiki_pages/58938)
+- [Pixiv-API][2]
+- [PixivPy][3]
+- [pixiv api][4]
+
+[1]:	http://docs.python-requests.org/
+[2]:	https://github.com/twopon/Pixiv-API
+[3]:	https://github.com/upbit/pixivpy
+[4]:	https://danbooru.donmai.us/wiki_pages/58938
+
+[image-1]:	https://raw.github.com/bebound/Pixiv/master/ScreenShot/2.png
