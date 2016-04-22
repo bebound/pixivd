@@ -20,6 +20,8 @@ _PROGRESS_LOCK = threading.Lock()
 
 def get_default_save_path():
     current_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+    if not os.path.isdir(os.path.join(current_path, 'illustrations')):
+        os.mkdir(os.path.join(current_path, 'illustrations'))
     return os.path.join(current_path, 'illustrations')
 
 
