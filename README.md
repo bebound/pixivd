@@ -15,7 +15,7 @@ Download illustrations by **user id**, **daily ranking** or **history ranking**.
   - [x] Secure storage (not memory safe)
 - [x] Update downloaded artists
 - [x] Refresh downloaded artists
-
+- [x] Mutil-Language
 
 ## Requirement
 

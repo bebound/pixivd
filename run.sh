@@ -1,4 +1,4 @@
 #!/bin/bash
 clear
-python3 Pixiv\ Downloader.py
+python3 Pixiv.py
 clear
