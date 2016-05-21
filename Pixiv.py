@@ -77,12 +77,12 @@ def get_speed(t0):
 
 
 def print_progress(download_queue):
-    start = time.clock()
     global _finished_download, _queue_size
+    start = time.time()
     while not _finished_download == _queue_size:
         time.sleep(1)
-        t0 = time.clock() - start
-        start = time.clock()
+        t0 = time.time() - start
+        start = time.time()
         number_of_sharp = round(_finished_download / _queue_size * 50)
         number_of_space = 50 - number_of_sharp
         percent = _finished_download / _queue_size * 100
@@ -127,11 +127,13 @@ def download_threading(download_queue, save_path='.', add_rank=False, refresh=Fa
                         with open(file_path, 'wb') as f:
                             total_length = r.headers.get('content-length')
                             if total_length:
-                                for chunk in r.iter_content(4096):
-                                    f.write(chunk)
+                                data = []
+                                for chunk in r.iter_content(1024 * 60):
+                                    data.append(chunk)
                                     with _SPEED_LOCK:
                                         global _Global_Download
                                         _Global_Download += len(chunk)
+                                map(f.write, data)
                             else:
                                 f.write(r.content)
                     else:
