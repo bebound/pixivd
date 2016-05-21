@@ -220,7 +220,7 @@ def download_by_user_id(user):
     save_path = get_default_save_path()
     user_ids = input(_('Input the artist\'s id:(separate with space)'))
     for user_id in user_ids.split(' '):
-        print(_('Artists %s ??\n') % user_id)
+        print(_('Artists %s\n') % user_id)
         data_list = user.get_user_illustrations(user_id)
         download_illustrations(data_list, save_path, add_user_folder=True)
 
