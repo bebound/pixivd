@@ -76,7 +76,7 @@ def get_speed(t0):
     return '%6.2f %s/s' % (speed, units[unit])
 
 
-def print_progress(download_queue):
+def print_progress():
     global _finished_download, _queue_size
     start = time.time()
     while not _finished_download == _queue_size:
@@ -166,11 +166,11 @@ def start_and_wait_download_trending(download_queue, save_path='.', add_rank=Fal
     th = []
     for i in range(_THREADING_NUMBER + 1):
         if not i:
-            t = threading.Thread(target=print_progress, args=(download_queue,))
-            t.start()
+            t = threading.Thread(target=print_progress)
         else:
             t = threading.Thread(target=download_threading, args=(download_queue, save_path, add_rank, refresh))
-            t.start()
+        t.daemon = True
+        t.start()
         th.append(t)
 
     for t in th:
