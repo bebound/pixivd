@@ -288,7 +288,7 @@ def remove_repeat(user):
 
 
 def main():
-    print(_(' Pixiv Downloader 2.2 ').center(77, '#'))
+    print(_(' Pixiv Downloader 2.3 ').center(77, '#'))
     user = PixivApi()
     options = {
         '1': download_by_user_id,
