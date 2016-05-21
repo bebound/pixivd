@@ -9,7 +9,14 @@ import requests
 
 from AESCipher import AESCipher
 from i18n import i18n as _
-from utils import Pixiv_Get_Error
+
+
+class Pixiv_Get_Error(Exception):
+    def __init__(self, url):
+        self.url = url
+
+    def __str__(self):
+        return 'Failed to get data: ' + self.url
 
 
 class PixivApi:
