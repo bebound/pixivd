@@ -3,14 +3,13 @@ import getpass
 import json
 import os
 import re
-import requests
 import sys
 
+import requests
+
 from AESCipher import AESCipher
-
-from utils import Pixiv_Get_Error
-
 from i18n import i18n as _
+from utils import Pixiv_Get_Error
 
 
 class PixivApi:

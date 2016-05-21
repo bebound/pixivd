@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import copy
 import datetime
+import math
 import os
 import queue
 import re
@@ -8,13 +9,11 @@ import sys
 import threading
 import time
 
-import math
 import requests
 
 from api import PixivApi
-from model import PixivIllustModel
-
 from i18n import i18n as _
+from model import PixivIllustModel
 
 _THREADING_NUMBER = 15
 _queue_size = 0
@@ -254,15 +253,15 @@ def refresh_exist(user):
 def issue_exist(user, refresh):
     current_path = get_default_save_path()
     for folder in os.listdir(current_path):
-        if os.path.isdir(os.path.join(current_path,folder)):
+        if os.path.isdir(os.path.join(current_path, folder)):
             try:
                 get_id = re.search('^\d+ ', folder)
                 if get_id:
                     get_id = get_id.group().replace(' ', '')
                     try:
-                        print(_('Artists %s\n') % folder,end='')
+                        print(_('Artists %s\n') % folder, end='')
                     except UnicodeError:
-                        print(_('Artists %s ??\n') % get_id,end='')
+                        print(_('Artists %s ??\n') % get_id, end='')
                     save_path = os.path.join(current_path, folder)
                     data_list = user.get_user_illustrations(get_id)
                     download_illustrations(data_list, save_path, refresh=refresh)
@@ -272,18 +271,18 @@ def issue_exist(user, refresh):
 
 def remove_repeat(user):
     choice = input(_('Dangerous Action: continue?(y/n)'))
-    if choice=='y':
+    if choice == 'y':
         current_path = get_default_save_path()
         for folder in os.listdir(current_path):
-            if os.path.isdir(os.path.join(current_path,folder)):
+            if os.path.isdir(os.path.join(current_path, folder)):
                 get_id = re.search('^\d+ ', folder)
                 if get_id:
                     path = os.path.join(current_path, folder)
                     for f in os.listdir(path):
                         illustration_id = re.search('^\d+\.', f)
                         if illustration_id:
-                            if os.path.isfile(os.path.join(path,illustration_id.string.replace('.','_p0.'))):
-                                os.remove(os.path.join(path,f))
+                            if os.path.isfile(os.path.join(path, illustration_id.string.replace('.', '_p0.'))):
+                                os.remove(os.path.join(path, f))
 
 
 def main():
@@ -303,7 +302,7 @@ def main():
         for i in sorted(options.keys()):
             print('\t %s %s' % (i, _(options[i].__name__).replace('_', ' ')))
         choose = input('\t e %s \n:' % _('exit'))
-        if choose in [str(i) for i in range(len(options)+1)]:
+        if choose in [str(i) for i in range(len(options) + 1)]:
             print((' ' + _(options[choose].__name__).replace('_', ' ') + ' ').center(60, '#') + '\n')
             options[choose](user)
             print('\n' + (' ' + _(options[choose].__name__).replace('_', ' ') + _(' finished ')).center(60, '#') + '\n')
