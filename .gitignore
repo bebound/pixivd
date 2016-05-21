@@ -1,5 +1,4 @@
 illustrations/
-
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm
 
 *.iml
@@ -91,7 +90,6 @@ nosetests.xml
 coverage.xml
 
 # Translations
-*.mo
 *.pot
 
 # Django stuff:
@@ -149,3 +147,4 @@ Temporary Items
 .apdisk
 
 test.py
+/session

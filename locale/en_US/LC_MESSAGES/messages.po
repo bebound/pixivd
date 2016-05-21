@@ -1,0 +1,139 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2016-01-08 12:06+0800\n"
+"PO-Revision-Date: 2016-05-21 20:36+1000\n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"X-Generator: Poedit 1.8.7\n"
+
+#: Pixiv Downloader.py:138
+#, python-format
+msgid "Connection error: %s"
+msgstr "Connection error: %s"
+
+#: Pixiv Downloader.py:140
+msgid "process cancelled"
+msgstr "process cancelled"
+
+#: Pixiv Downloader.py:142
+#, python-format
+msgid "%s => %s download failed"
+msgstr "%s => %s download failed"
+
+#: Pixiv Downloader.py:144
+#, python-format
+msgid "%s => %s download error, retry"
+msgstr "%s => %s download error, retry"
+
+#: Pixiv Downloader.py:200
+msgid "Start download, total illustrations "
+msgstr "Start download, total illustrations "
+
+#: Pixiv Downloader.py:216
+msgid "There is no new illustration need to download"
+msgstr "There is no new illustration need to download"
+
+#: Pixiv Downloader.py:221
+msgid "Input the artist's id:(separate with space)"
+msgstr "Input the artist's id:(separate with space)"
+
+#: Pixiv Downloader.py:223 Downloader.py:264
+#, python-format
+msgid "Artists %s ??\n"
+msgstr "Artists %s ??\n"
+
+#: Pixiv Downloader.py:236
+msgid "Input the date:(eg:2015-07-10)"
+msgstr "Input the date:(eg:2015-07-10)"
+
+#: Pixiv Downloader.py:238
+msgid "[invalid]"
+msgstr "[invalid]"
+
+#: Pixiv Downloader.py:262
+#, python-format
+msgid "Artists %s\n"
+msgstr "Artists %s\n"
+
+#: Pixiv Downloader.py:273
+msgid " Pixiv Downloader 2.2 "
+msgstr " Pixiv Downloader 2.2 "
+
+#: Pixiv Downloader.py:284
+msgid "Which do you want to:"
+msgstr "Which do you want to:"
+
+#: Pixiv Downloader.py:287
+msgid "exit"
+msgstr "exit"
+
+#: Pixiv Downloader.py:289
+msgid "download_by_user_id"
+msgstr "download_by_user_id"
+
+#: Pixiv Downloader.py:290
+msgid "download_by_ranking"
+msgstr "download_by_ranking"
+
+#: Pixiv Downloader.py:291
+msgid "download_by_history_ranking"
+msgstr "download_by_history_ranking"
+
+#: Pixiv Downloader.py:292
+msgid "update_exist"
+msgstr "update_exist"
+
+#: Pixiv Downloader.py:293
+msgid "refresh_exist"
+msgstr "refresh_exist"
+
+#: Pixiv Downloader.py:295
+msgid " finished "
+msgstr " finished "
+
+#: Pixiv Downloader.py:299
+msgid "Wrong input!"
+msgstr "Wrong input!"
+
+#: api.py:49
+msgid "Checking session"
+msgstr "Checking session"
+
+#: api.py:63
+msgid " [VALID]"
+msgstr " [VALID]"
+
+#: api.py:65
+msgid " [EXPIRED]"
+msgstr " [EXPIRED]"
+
+#: api.py:106
+msgid "Unknown Method:"
+msgstr "Unknown Method:"
+
+#: api.py:147
+msgid "[ERROR] connection failed!"
+msgstr "[ERROR] connection failed!"
+
+#: api.py:151
+msgid "Please login"
+msgstr "Please login"
+
+#: api.py:152
+msgid "username:"
+msgstr "username:"
+
+#: api.py:153
+msgid "password:"
+msgstr "password:"

@@ -1,29 +1,35 @@
 # Pixiv Downloader
+---
 
 A simple tool to download all illustrations from specific illustrator.
 
 Download illustrations by **uers\_id**, **daily ranking** or **history ranking**.
 
+---
+
+## Features
+- [x] Keep login sessions
+  - [x] Local storage
+  - [x] Secure storage (not memory safe)
+- [x] Update downloaded artists
+- [x] Refresh downloaded artists
+- [x] Mutil-Language
+
 ## Requirement
 
-[requests][1]
+[Requests](http://docs.python-requests.org/)
+
+[PyCrypto](https://www.dlitz.net/software/pycrypto/)
 
 
 ## Screenshot
 
 pixiv.py
 
-![img][image-1]
+![img](https://raw.github.com/bebound/Pixiv/master/ScreenShot/4.png)
 
 
 ## Credits
-- [Pixiv-API][2]
-- [PixivPy][3]
-- [pixiv api][4]
-
-[1]:	http://docs.python-requests.org/
-[2]:	https://github.com/twopon/Pixiv-API
-[3]:	https://github.com/upbit/pixivpy
-[4]:	https://danbooru.donmai.us/wiki_pages/58938
-
-[image-1]:	https://raw.github.com/bebound/Pixiv/master/ScreenShot/2.png
+- [Pixiv-API](https://github.com/twopon/Pixiv-API)
+- [PixivPy](https://github.com/upbit/pixivpy)
+- [pixiv api](https://danbooru.donmai.us/wiki_pages/58938)
