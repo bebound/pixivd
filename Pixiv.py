@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import copy
 import datetime
 import math
 import os
@@ -15,7 +14,7 @@ from api import PixivApi
 from i18n import i18n as _
 from model import PixivIllustModel
 
-_THREADING_NUMBER = 15
+_THREADING_NUMBER = 10
 _queue_size = 0
 _finished_download = 0
 _CREATE_FOLDER_LOCK = threading.Lock()
@@ -26,16 +25,16 @@ _Global_Download = 0
 
 def get_default_save_path():
     current_path = os.path.dirname(os.path.abspath(sys.argv[0]))
-    file_path = os.path.join(current_path, 'illustrations')
-    if not os.path.exists(file_path):
+    filepath = os.path.join(current_path, 'illustrations')
+    if not os.path.exists(filepath):
         with _CREATE_FOLDER_LOCK:
-            if not os.path.exists(os.path.dirname(file_path)):
-                os.makedirs(os.path.dirname(file_path))
-            os.makedirs(file_path)
-    return file_path
+            if not os.path.exists(os.path.dirname(filepath)):
+                os.makedirs(os.path.dirname(filepath))
+            os.makedirs(filepath)
+    return filepath
 
 
-def get_file_path(illustration, save_path='.'):
+def get_filepath(illustration, save_path='.'):
     """chose a file path by user id and name, if the current path has a folder start with the user id,
     use the old folder instead
 
@@ -44,7 +43,7 @@ def get_file_path(illustration, save_path='.'):
         :param illustration:
 
     Return:
-        file_path: a string represent complete folder path.
+        filepath: a string represent complete folder path.
 
     """
     user_id = illustration.user_id
@@ -57,9 +56,9 @@ def get_file_path(illustration, save_path='.'):
     else:
         dir_name = list(filter(lambda x: x.split()[0] == user_id, cur_dirs))[0]
 
-    file_path = os.path.join(save_path, dir_name)
+    filepath = os.path.join(save_path, dir_name)
 
-    return file_path
+    return filepath
 
 
 def get_speed(t0):
@@ -99,61 +98,57 @@ def print_progress():
                              '/' + str(_queue_size) + ')' + '[%s]  ' % get_speed(t0))
 
 
-def download_threading(download_queue, save_path='.', add_rank=False, refresh=False):
+def get_fileinfo(url, illustration, save_path='.', add_rank=False):
+    filename = url.split('/')[-1]
+    if add_rank:
+        filename = illustration.rank + ' - ' + filename
+    filepath = os.path.join(save_path, filename)
+    return filename, filepath
+
+
+def download_file(url, filepath):
     headers = {'Referer': 'http://www.pixiv.net/'}
+    r = requests.get(url, headers=headers, stream=True, timeout=PixivApi.timeout)
+    if r.status_code == requests.codes.ok:
+        total_length = r.headers.get('content-length')
+        if total_length:
+            data = []
+            for chunk in r.iter_content(1024 * 32):
+                data.append(chunk)
+                with _SPEED_LOCK:
+                    global _Global_Download
+                    _Global_Download += len(chunk)
+            with open(filepath, 'wb') as f:
+                list(map(f.write, data))
+    else:
+        raise ConnectionError('\r', _('Connection error: %s') % r.status_code)
+
+
+def download_threading(download_queue, save_path='.', add_rank=False, refresh=False):
     while not download_queue.empty():
         illustration = download_queue.get()
-        failed = False
         for url in illustration.image_urls:
-            file_name = url.split('/')[-1]
-            if add_rank:
-                file_name = illustration.rank + ' - ' + file_name
-            file_path = os.path.join(save_path, file_name)
+            filename, filepath = get_fileinfo(url, illustration, save_path, add_rank)
             try:
-                if not os.path.exists(file_path) or refresh:
+                if not os.path.exists(filepath) or refresh:
                     with _CREATE_FOLDER_LOCK:
-                        if not os.path.exists(os.path.dirname(file_path)):
-                            current_dir = os.path.dirname(file_path)
-                            while not os.path.exists(os.path.dirname(file_path)):
-                                if not os.path.exists(os.path.dirname(current_dir)):
-                                    current_dir = os.path.dirname(current_dir)
-                                elif not os.path.exists(current_dir):
-                                    os.makedirs(current_dir)
-                                    current_dir = os.path.dirname(file_path)
-                            if not os.path.exists(os.path.dirname(file_path)):
-                                os.makedirs(os.path.dirname(file_path))
-                    r = requests.get(url, headers=headers, stream=True, timeout=PixivApi.timeout)
-                    if r.status_code == requests.codes.ok:
-                        with open(file_path, 'wb') as f:
-                            total_length = r.headers.get('content-length')
-                            if total_length:
-                                data = []
-                                for chunk in r.iter_content(1024 * 60):
-                                    data.append(chunk)
-                                    with _SPEED_LOCK:
-                                        global _Global_Download
-                                        _Global_Download += len(chunk)
-                                map(f.write, data)
-                            else:
-                                f.write(r.content)
-                    else:
-                        raise ConnectionError(_('Connection error: %s') % r.status_code)
+                        if not os.path.exists(os.path.dirname(filepath)):
+                            os.makedirs(os.path.dirname(filepath))
+                        download_file(url, filepath)
+
             except KeyboardInterrupt:
-                print(_('process cancelled'))
+                print('\r', _('process cancelled'))
             except ConnectionError as e:
-                print(_('%s => %s download failed') % (e, file_name))
+                print('\r', _('%s => %s download failed') % (e, filename))
             except Exception as e:
-                print(_('%s => %s download error, retry') % (e, file_name))
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-                download_queue.put(copy.copy(illustration))
-                failed = True
-        if failed:
-            download_queue.task_done()
-            continue
-        with _PROGRESS_LOCK:
-            global _finished_download
-            _finished_download += 1
+                print('\r', _('%s => %s download error, retry') % (e, filename))
+                download_queue.put(illustration)
+                break
+        else:
+            with _PROGRESS_LOCK:
+                global _finished_download
+                _finished_download += 1
+        download_queue.task_done()
 
 
 def start_and_wait_download_trending(download_queue, save_path='.', add_rank=False, refresh=False):
@@ -182,11 +177,11 @@ def check_files(illustrations, save_path='.', add_rank=False):
         for illustration in illustrations[:]:
             count = len(illustration.image_urls)
             for url in illustration.image_urls:
-                file_name = url.split('/')[-1]
+                filename = url.split('/')[-1]
                 if add_rank:
-                    file_name = illustration.rank + ' - ' + file_name
-                file_path = os.path.join(save_path, file_name)
-                if os.path.exists(file_path):
+                    filename = illustration.rank + ' - ' + filename
+                filepath = os.path.join(save_path, filename)
+                if os.path.exists(filepath):
                     count -= 1
             if not count:
                 illustrations.remove(illustration)
@@ -202,7 +197,7 @@ def download_illustrations(data_list, save_path='.', add_user_folder=False, add_
         print(_('Start download, total illustrations '), len(illustrations))
 
         if add_user_folder:
-            save_path = get_file_path(illustrations[0], save_path)
+            save_path = get_filepath(illustrations[0], save_path)
 
         download_queue = queue.Queue()
         for illustration in illustrations:
@@ -257,34 +252,35 @@ def issue_exist(user, refresh):
     for folder in os.listdir(current_path):
         if os.path.isdir(os.path.join(current_path, folder)):
             try:
-                get_id = re.search('^\d+ ', folder)
-                if get_id:
-                    get_id = get_id.group().replace(' ', '')
+                id = re.search('^(\d+) ', folder)
+                if id:
+                    id = id.group(1)
                     try:
                         print(_('Artists %s\n') % folder, end='')
                     except UnicodeError:
-                        print(_('Artists %s ??\n') % get_id, end='')
+                        print(_('Artists %s ??\n') % id, end='')
                     save_path = os.path.join(current_path, folder)
-                    data_list = user.get_user_illustrations(get_id)
+                    data_list = user.get_user_illustrations(id)
                     download_illustrations(data_list, save_path, refresh=refresh)
             except Exception as e:
                 print(e)
 
 
 def remove_repeat(user):
+    """Delete xxxxx.img if xxxxx_p0.img exist"""
     choice = input(_('Dangerous Action: continue?(y/n)'))
     if choice == 'y':
-        current_path = get_default_save_path()
-        for folder in os.listdir(current_path):
-            if os.path.isdir(os.path.join(current_path, folder)):
-                get_id = re.search('^\d+ ', folder)
-                if get_id:
-                    path = os.path.join(current_path, folder)
+        illust_path = get_default_save_path()
+        for folder in os.listdir(illust_path):
+            if os.path.isdir(os.path.join(illust_path, folder)):
+                if re.search('^(\d+) ', folder):
+                    path = os.path.join(illust_path, folder)
                     for f in os.listdir(path):
                         illustration_id = re.search('^\d+\.', f)
                         if illustration_id:
                             if os.path.isfile(os.path.join(path, illustration_id.string.replace('.', '_p0.'))):
                                 os.remove(os.path.join(path, f))
+                                print('Delete', os.path.join(path, f))
 
 
 def main():
