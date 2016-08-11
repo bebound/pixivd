@@ -98,14 +98,6 @@ def print_progress():
                              '/' + str(_queue_size) + ')' + '[%s]  ' % get_speed(t0))
 
 
-def get_fileinfo(url, illustration, save_path='.', add_rank=False):
-    filename = url.split('/')[-1]
-    if add_rank:
-        filename = illustration.rank + ' - ' + filename
-    filepath = os.path.join(save_path, filename)
-    return filename, filepath
-
-
 def download_file(url, filepath):
     headers = {'Referer': 'http://www.pixiv.net/'}
     r = requests.get(url, headers=headers, stream=True, timeout=PixivApi.timeout)
@@ -134,20 +126,17 @@ def download_threading(download_queue, save_path='.', add_rank=False, refresh=Fa
                     with _CREATE_FOLDER_LOCK:
                         if not os.path.exists(os.path.dirname(filepath)):
                             os.makedirs(os.path.dirname(filepath))
-                        download_file(url, filepath)
+                    download_file(url, filepath)
 
-            except KeyboardInterrupt:
-                print('\r', _('process cancelled'))
-            except ConnectionError as e:
-                print('\r', _('%s => %s download failed') % (e, filename))
+                    with _PROGRESS_LOCK:
+                        global _finished_download
+                        _finished_download += 1
+
             except Exception as e:
-                print('\r', _('%s => %s download error, retry') % (e, filename))
+                print(_('\r%s => %s download error, retry') % (e, filename))
                 download_queue.put(illustration)
                 break
-        else:
-            with _PROGRESS_LOCK:
-                global _finished_download
-                _finished_download += 1
+
         download_queue.task_done()
 
 
@@ -158,53 +147,69 @@ def start_and_wait_download_trending(download_queue, save_path='.', add_rank=Fal
     :param save_path:
     :param download_queue:
     """
-    th = []
-    for i in range(_THREADING_NUMBER + 1):
-        if not i:
-            t = threading.Thread(target=print_progress)
-        else:
-            t = threading.Thread(target=download_threading, args=(download_queue, save_path, add_rank, refresh))
+    p = threading.Thread(target=print_progress)
+    p.daemon = True
+    p.start()
+    for i in range(_THREADING_NUMBER):
+        t = threading.Thread(target=download_threading, args=(download_queue, save_path, add_rank, refresh))
         t.daemon = True
         t.start()
-        th.append(t)
 
-    for t in th:
-        t.join()
+    download_queue.join()
+    p.join()
+
+
+def get_fileinfo(url, illustration, save_path='.', add_rank=False):
+    filename = url.split('/')[-1]
+    if add_rank:
+        filename = illustration.rank + ' - ' + filename
+    filepath = os.path.join(save_path, filename)
+    return filename, filepath
 
 
 def check_files(illustrations, save_path='.', add_rank=False):
-    if len(illustrations) > 0:
-        for illustration in illustrations[:]:
-            count = len(illustration.image_urls)
-            for url in illustration.image_urls:
-                filename = url.split('/')[-1]
-                if add_rank:
-                    filename = illustration.rank + ' - ' + filename
-                filepath = os.path.join(save_path, filename)
+    if illustrations:
+        for illustration in illustrations.copy():
+            for url in illustration.image_urls.copy():
+                _, filepath = get_fileinfo(url, illustration, save_path, add_rank)
                 if os.path.exists(filepath):
-                    count -= 1
-            if not count:
+                    illustration.image_urls.remove(url)
+            if not illustration.image_urls:
                 illustrations.remove(illustration)
 
 
+def count_illustrations(illustrations):
+    return sum(len(i.image_urls) for i in illustrations)
+
+
 def download_illustrations(data_list, save_path='.', add_user_folder=False, add_rank=False, refresh=False):
+    """Download illustratons
+
+    Args:
+        data_list: json
+        save_path: str, download path of the illustrations
+        add_user_folder: bool, whether put the illustration into user folder
+        add_rank: bool, add illustration rank at the beginning of filename
+        refresh: bool, whether re-download illustrations
+
+    """
     illustrations = PixivIllustModel.from_data(data_list)
+
+    if add_user_folder:
+        save_path = get_filepath(illustrations[0], save_path)
 
     if not refresh:
         check_files(illustrations, save_path, add_rank)
 
-    if len(illustrations) > 0:
-        print(_('Start download, total illustrations '), len(illustrations))
-
-        if add_user_folder:
-            save_path = get_filepath(illustrations[0], save_path)
+    if count_illustrations(illustrations) > 0:
+        print(_('Start download, total illustrations'), count_illustrations(illustrations))
 
         download_queue = queue.Queue()
         for illustration in illustrations:
             download_queue.put(illustration)
 
         global _queue_size, _finished_download, _Global_Download
-        _queue_size = len(illustrations)
+        _queue_size = count_illustrations(illustrations)
         _finished_download = 0
         _Global_Download = 0
         start_and_wait_download_trending(download_queue, save_path, add_rank, refresh)
