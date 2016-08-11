@@ -34,34 +34,8 @@ def get_default_save_path():
     return filepath
 
 
-def get_filepath(illustration, save_path='.'):
-    """chose a file path by user id and name, if the current path has a folder start with the user id,
-    use the old folder instead
-
-    Args:
-        :param save_path:
-        :param illustration:
-
-    Return:
-        filepath: a string represent complete folder path.
-
-    """
-    user_id = illustration.user_id
-    user_name = illustration.user_name
-
-    cur_dirs = list(filter(os.path.isfile, os.listdir(save_path)))
-    cur_user_ids = [cur_dir.split()[0] for cur_dir in cur_dirs]
-    if user_id not in cur_user_ids:
-        dir_name = re.sub(r'[<>:"/\\|\?\*]', ' ', user_id + ' ' + user_name)
-    else:
-        dir_name = list(filter(lambda x: x.split()[0] == user_id, cur_dirs))[0]
-
-    filepath = os.path.join(save_path, dir_name)
-
-    return filepath
-
-
 def get_speed(t0):
+    """Get current download speed"""
     with _SPEED_LOCK:
         global _Global_Download
         down = _Global_Download
@@ -116,13 +90,13 @@ def download_file(url, filepath):
         raise ConnectionError('\r', _('Connection error: %s') % r.status_code)
 
 
-def download_threading(download_queue, save_path='.', add_rank=False, refresh=False):
+def download_threading(download_queue, save_path='.', add_user_folder=False, add_rank=False):
     while not download_queue.empty():
         illustration = download_queue.get()
         for url in illustration.image_urls:
-            filename, filepath = get_fileinfo(url, illustration, save_path, add_rank)
+            filename, filepath = get_filepath(url, illustration, save_path, add_user_folder, add_rank)
             try:
-                if not os.path.exists(filepath) or refresh:
+                if not os.path.exists(filepath):
                     with _CREATE_FOLDER_LOCK:
                         if not os.path.exists(os.path.dirname(filepath)):
                             os.makedirs(os.path.dirname(filepath))
@@ -140,18 +114,14 @@ def download_threading(download_queue, save_path='.', add_rank=False, refresh=Fa
         download_queue.task_done()
 
 
-def start_and_wait_download_trending(download_queue, save_path='.', add_rank=False, refresh=False):
-    """start download trending and wait till complete
-    :param refresh:
-    :param add_rank:
-    :param save_path:
-    :param download_queue:
-    """
+def start_and_wait_download_threading(download_queue, save_path='.', add_user_folder=False, add_rank=False):
+    """start download threading and wait till complete"""
     p = threading.Thread(target=print_progress)
     p.daemon = True
     p.start()
     for i in range(_THREADING_NUMBER):
-        t = threading.Thread(target=download_threading, args=(download_queue, save_path, add_rank, refresh))
+        t = threading.Thread(target=download_threading,
+                             args=(download_queue, save_path, add_user_folder, add_rank))
         t.daemon = True
         t.start()
 
@@ -159,19 +129,36 @@ def start_and_wait_download_trending(download_queue, save_path='.', add_rank=Fal
     p.join()
 
 
-def get_fileinfo(url, illustration, save_path='.', add_rank=False):
+def get_filepath(url, illustration, save_path='.', add_user_folder=False, add_rank=False):
+    """return (filename,filepath)"""
+
+    if add_user_folder:
+        user_id = illustration.user_id
+        user_name = illustration.user_name
+        current_path = get_default_save_path()
+
+        cur_dirs = list(filter(os.path.isdir, [os.path.join(current_path,i) for i in os.listdir(current_path)]))
+        cur_user_ids = [cur_dir.split('/')[-1].split()[0] for cur_dir in cur_dirs]
+
+        if user_id not in cur_user_ids:
+            dir_name = re.sub(r'[<>:"/\\|\?\*]', ' ', user_id + ' ' + user_name)
+        else:
+            dir_name = list(i for i in cur_dirs if i.split('/')[-1].split()[0] == user_id)[0]
+        save_path = os.path.join(save_path, dir_name)
+
     filename = url.split('/')[-1]
     if add_rank:
         filename = illustration.rank + ' - ' + filename
     filepath = os.path.join(save_path, filename)
+
     return filename, filepath
 
 
-def check_files(illustrations, save_path='.', add_rank=False):
+def check_files(illustrations, save_path='.', add_user_folder=False, add_rank=False):
     if illustrations:
         for illustration in illustrations.copy():
             for url in illustration.image_urls.copy():
-                _, filepath = get_fileinfo(url, illustration, save_path, add_rank)
+                _, filepath = get_filepath(url, illustration, save_path, add_user_folder, add_rank)
                 if os.path.exists(filepath):
                     illustration.image_urls.remove(url)
             if not illustration.image_urls:
@@ -182,7 +169,7 @@ def count_illustrations(illustrations):
     return sum(len(i.image_urls) for i in illustrations)
 
 
-def download_illustrations(data_list, save_path='.', add_user_folder=False, add_rank=False, refresh=False):
+def download_illustrations(data_list, save_path='.', add_user_folder=False, add_rank=False):
     """Download illustratons
 
     Args:
@@ -190,16 +177,9 @@ def download_illustrations(data_list, save_path='.', add_user_folder=False, add_
         save_path: str, download path of the illustrations
         add_user_folder: bool, whether put the illustration into user folder
         add_rank: bool, add illustration rank at the beginning of filename
-        refresh: bool, whether re-download illustrations
-
     """
     illustrations = PixivIllustModel.from_data(data_list)
-
-    if add_user_folder:
-        save_path = get_filepath(illustrations[0], save_path)
-
-    if not refresh:
-        check_files(illustrations, save_path, add_rank)
+    check_files(illustrations, save_path, add_user_folder, add_rank)
 
     if count_illustrations(illustrations) > 0:
         print(_('Start download, total illustrations'), count_illustrations(illustrations))
@@ -212,7 +192,7 @@ def download_illustrations(data_list, save_path='.', add_user_folder=False, add_
         _queue_size = count_illustrations(illustrations)
         _finished_download = 0
         _Global_Download = 0
-        start_and_wait_download_trending(download_queue, save_path, add_rank, refresh)
+        start_and_wait_download_threading(download_queue, save_path, add_user_folder, add_rank)
         print()
     else:
         print(_('There is no new illustration need to download'))
@@ -245,28 +225,20 @@ def download_by_history_ranking(user):
 
 
 def update_exist(user):
-    issue_exist(user, False)
-
-
-def refresh_exist(user):
-    issue_exist(user, True)
-
-
-def issue_exist(user, refresh):
     current_path = get_default_save_path()
-    for folder in os.listdir(current_path):
+    for folder in os.listdir(get_default_save_path()):
         if os.path.isdir(os.path.join(current_path, folder)):
             try:
-                id = re.search('^(\d+) ', folder)
-                if id:
-                    id = id.group(1)
+                user_id = re.search('^(\d+) ', folder)
+                if user_id:
+                    user_id = user_id.group(1)
                     try:
                         print(_('Artists %s\n') % folder, end='')
                     except UnicodeError:
-                        print(_('Artists %s ??\n') % id, end='')
-                    save_path = os.path.join(current_path, folder)
-                    data_list = user.get_user_illustrations(id)
-                    download_illustrations(data_list, save_path, refresh=refresh)
+                        print(_('Artists %s ??\n') % user_id, end='')
+                    save_path = current_path
+                    data_list = user.get_user_illustrations(user_id)
+                    download_illustrations(data_list, save_path, add_user_folder=True)
             except Exception as e:
                 print(e)
 
@@ -296,8 +268,7 @@ def main():
         '2': download_by_ranking,
         '3': download_by_history_ranking,
         '4': update_exist,
-        '5': refresh_exist,
-        '6': remove_repeat
+        '5': remove_repeat
     }
 
     while True:
@@ -305,7 +276,7 @@ def main():
         for i in sorted(options.keys()):
             print('\t %s %s' % (i, _(options[i].__name__).replace('_', ' ')))
         choose = input('\t e %s \n:' % _('exit'))
-        if choose in [str(i) for i in range(len(options) + 1)]:
+        if choose in [str(i) for i in range(1, len(options) + 1)]:
             print((' ' + _(options[choose].__name__).replace('_', ' ') + ' ').center(60, '#') + '\n')
             options[choose](user)
             print('\n' + (' ' + _(options[choose].__name__).replace('_', ' ') + _(' finished ')).center(60, '#') + '\n')
