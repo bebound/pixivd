@@ -118,7 +118,9 @@ class PixivApi:
             self.session = requests.Session()
         try:
             if method == 'GET':
-                return self.session.get(url, headers=pixiv_headers, params=params, timeout=self.timeout)
+                r = self.session.get(url, headers=pixiv_headers, params=params, timeout=self.timeout)
+                r.encoding = 'utf-8'
+                return r
             elif method == 'POST':
                 return self.session.post(url, headers=pixiv_headers, params=params, data=data, timeout=self.timeout)
             else:
