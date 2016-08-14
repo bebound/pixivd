@@ -40,10 +40,10 @@ def get_speed(t0):
         global _Global_Download
         down = _Global_Download
         _Global_Download = 0
-    speed = down // t0
+    speed = down / t0
     if speed == 0:
         return '%8.2f /s' % 0
-    units = ['bytes', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB']
+    units = [' B', 'KB', 'MB', 'GB', 'TB', 'PB']
     unit = math.floor(math.log(speed, 1024.0))
     speed /= math.pow(1024.0, unit)
     return '%6.2f %s/s' % (speed, units[unit])
@@ -79,7 +79,7 @@ def download_file(url, filepath):
         total_length = r.headers.get('content-length')
         if total_length:
             data = []
-            for chunk in r.iter_content(1024 * 32):
+            for chunk in r.iter_content(1024 * 16):
                 data.append(chunk)
                 with _SPEED_LOCK:
                     global _Global_Download
