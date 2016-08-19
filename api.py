@@ -3,14 +3,20 @@ import getpass
 import json
 import os
 import re
-import requests
 import sys
 
+import requests
+
 from AESCipher import AESCipher
-
-from utils import Pixiv_Get_Error
-
 from i18n import i18n as _
+
+
+class Pixiv_Get_Error(Exception):
+    def __init__(self, url):
+        self.url = url
+
+    def __str__(self):
+        return 'Failed to get data: ' + self.url
 
 
 class PixivApi:
@@ -94,8 +100,7 @@ class PixivApi:
         handle all url request
 
         Args:
-            :param url: str
-            :param method: str
+            method: str, http method
 
         """
         pixiv_headers = {
@@ -113,7 +118,9 @@ class PixivApi:
             self.session = requests.Session()
         try:
             if method == 'GET':
-                return self.session.get(url, headers=pixiv_headers, params=params, timeout=self.timeout)
+                r = self.session.get(url, headers=pixiv_headers, params=params, timeout=self.timeout)
+                r.encoding = 'utf-8'
+                return r
             elif method == 'POST':
                 return self.session.post(url, headers=pixiv_headers, params=params, data=data, timeout=self.timeout)
             else:
@@ -128,12 +135,8 @@ class PixivApi:
         """
         logging to Pixiv
 
-        Args:
-            :param password: str
-            :param username: str
-
         Return:
-            a session object
+            a requests session object
 
         """
         url = 'https://oauth.secure.pixiv.net/auth/token'
@@ -184,7 +187,7 @@ class PixivApi:
         parse result from request
 
         Args:
-            :param r:
+            r: requests response object
 
         Return:
             fetched data in JSON format
@@ -208,9 +211,74 @@ class PixivApi:
             :param page: int
 
         Return:
-            a list contains dicts, which contains illustrations data
-            JSON Sample
-            illustrations_data.json
+            a list of dict
+            [
+                {
+                    'image_urls': {
+                        'small': 'http://i3.pixiv.net/c/150x150/img-master/img/2015/07/09/00/05/01/51320366_p0_master1200.jpg',
+                        'large': 'http://i3.pixiv.net/img-original/img/2015/07/09/00/05/01/51320366_p0.jpg',
+                        'medium': 'http://i3.pixiv.net/c/600x600/img-master/img/2015/07/09/00/05/01/51320366_p0_master1200.jpg',
+                        'px_480mw': 'http://i3.pixiv.net/c/480x960/img-master/img/2015/07/09/00/05/01/51320366_p0_master1200.jpg',
+                        'px_128x128': 'http://i3.pixiv.net/c/128x128/img-master/img/2015/07/09/00/05/01/51320366_p0_square1200.jpg'
+                    },
+                    'type': 'illustration',
+                    'favorite_id': 0,
+                    'width': 800,
+                    'stats': {
+                        'favorited_count': {
+                            'private': 236,
+                            'public': 3246
+                        },
+                        'views_count': 62043,
+                        'commented_count': 54,
+                        'score': 25741,
+                        'scored_count': 2600
+                    },
+                    'book_style': 'none',
+                    'content_type': None,
+                    'is_liked': False,
+                    'metadata': None,
+                    'age_limit': 'all-age',
+                    'user': {
+                        'is_following': True,
+                        'name': 'KD',
+                        'id': 395595,
+                        'account': 'cadillac',
+                        'is_friend': False,
+                        'profile': None,
+                        'is_follower': False,
+                        'profile_image_urls': {
+                            'px_50x50': 'http://i2.pixiv.net/img20/profile/cadillac/8457709_s.jpg'
+                        },
+                        'is_premium': None,
+                        'stats': None
+                    },
+                    'title': 'ドルフィンシンフォニー',
+                    'sanity_level': 'white',
+                    'reuploaded_time': '2015-07-09 00:05:01',
+                    'tools': [
+                        'Photoshop',
+                        'SAI'
+                    ],
+                    'id': 51320366,
+                    'publicity': 0,
+                    'created_time': '2015-07-09 00:05:01',
+                    'page_count': 1,
+                    'is_manga': False,
+                    'height': 1131,
+                    'caption': '今年もミニスカとthe太ももの季節がやってきました！',
+                    'tags': [
+                        '女子高生',
+                        'オリジナル',
+                        'セーラー服',
+                        'イルカ',
+                        '黒ハイソックス',
+                        'MDR-Z1000',
+                        '青',
+                        'ヘッドホン'
+                    ]
+                },XXX
+            ]
 
         """
         self.login_required()
@@ -239,13 +307,73 @@ class PixivApi:
         """
         get illustration data
 
-        Args:
-            :param illustration_id:
-
         Return:
-            a list contains one dict
-            JSON Sample
-            dict.json
+            a list of dict
+            [
+                {
+                    'image_urls': {
+                        'small': 'http://i1.pixiv.net/c/150x150/img-master/img/2015/06/24/00/07/22/51055528_p0_master1200.jpg',
+                        'large': 'http://i1.pixiv.net/img-original/img/2015/06/24/00/07/22/51055528_p0.jpg',
+                        'medium': 'http://i1.pixiv.net/c/600x600/img-master/img/2015/06/24/00/07/22/51055528_p0_master1200.jpg',
+                        'px_480mw': 'http://i1.pixiv.net/c/480x960/img-master/img/2015/06/24/00/07/22/51055528_p0_master1200.jpg',
+                        'px_128x128': 'http://i1.pixiv.net/c/128x128/img-master/img/2015/06/24/00/07/22/51055528_p0_square1200.jpg'
+                    },
+                    'type': 'illustration',
+                    'favorite_id': 0,
+                    'width': 1000,
+                    'stats': {
+                        'favorited_count': {
+                            'private': 469,
+                            'public': 5767
+                        },
+                        'views_count': 139847,
+                        'commented_count': 175,
+                        'score': 53870,
+                        'scored_count': 5466
+                    },
+                    'book_style': 'right_to_left',
+                    'content_type': None,
+                    'is_liked': False,
+                    'metadata': None,
+                    'age_limit': 'all-age',
+                    'user': {
+                        'is_following': True,
+                        'name': 'KD',
+                        'id': 395595,
+                        'account': 'cadillac',
+                        'is_friend': False,
+                        'profile': None,
+                        'is_follower': False,
+                        'profile_image_urls': {
+                            'px_50x50': 'http://i2.pixiv.net/img20/profile/cadillac/8457709_s.jpg'
+                        },
+                        'is_premium': None,
+                        'stats': None
+                    },
+                    'title': 'ゆき',
+                    'sanity_level': 'white',
+                    'reuploaded_time': '2015-06-24 00:07:22',
+                    'tools': [
+                        'Photoshop',
+                        'SAI'
+                    ],
+                    'id': 51055528,
+                    'publicity': 0,
+                    'created_time': '2015-06-24 00:07:22',
+                    'page_count': 1,
+                    'is_manga': False,
+                    'height': 1414,
+                    'caption': '感谢Facebook网友的写真参考https://www.facebook.com/profile.php?id=1272330679\r\nWorldCosplay- http://worldcosplay.net/photo/3499488',
+                    'tags': [
+                        '女子高生',
+                        'オリジナル',
+                        'セーラー服',
+                        '黒髪ロング',
+                        '模写',
+                        'オリジナル5000users入り'
+                    ]
+                }
+            ]
 
 
         """
@@ -266,16 +394,89 @@ class PixivApi:
         fetch illustrations by ranking
 
         Args:
-            :param mode: [daily, weekly, monthly, male, female, rookie,
+            mode: [daily, weekly, monthly, male, female, rookie,
                 daily_r18, weekly_r18, male_r18, female_r18, r18g]
-            :param date: '2015-04-01'
-            :param per_page: int
-            :param page: int
+            date: '2015-04-01'
+            per_page: int
+            page: int
 
         Return:
-            a list contains the illustrations data
-            JSON Sample
-            illustrations_data.json
+            a list of dict
+            [
+                {
+                'mode': 'daily',
+                'date': '2015-07-10',
+                'content': 'all',
+                'works': [
+                    {
+                        'rank': 1,
+                        'previous_rank': 7,
+                        'work': {
+                            'image_urls': {
+                                'small': 'http://i3.pixiv.net/c/150x150/img-master/img/2015/07/09/00/05/01/51320366_p0_master1200.jpg',
+                                'large': 'http://i3.pixiv.net/img-original/img/2015/07/09/00/05/01/51320366_p0.jpg',
+                                'medium': 'http://i3.pixiv.net/c/600x600/img-master/img/2015/07/09/00/05/01/51320366_p0_master1200.jpg',
+                                'px_480mw': 'http://i3.pixiv.net/c/480x960/img-master/img/2015/07/09/00/05/01/51320366_p0_master1200.jpg',
+                                'px_128x128': 'http://i3.pixiv.net/c/128x128/img-master/img/2015/07/09/00/05/01/51320366_p0_square1200.jpg'
+                            },
+                            'type': 'illustration',
+                            'favorite_id': None,
+                            'width': 800,
+                            'stats': {
+                                'favorited_count': {
+                                    'private': None,
+                                    'public': None
+                                },
+                                'views_count': 42718,
+                                'commented_count': None,
+                                'score': 6392,
+                                'scored_count': 644
+                            },
+                            'book_style': 'none',
+                            'content_type': None,
+                            'is_liked': None,
+                            'metadata': None,
+                            'age_limit': 'all-age',
+                            'user': {
+                                'is_following': None,
+                                'name': 'KD',
+                                'id': 395595,
+                                'account': 'cadillac',
+                                'is_friend': None,
+                                'profile': None,
+                                'is_follower': None,
+                                'profile_image_urls': {
+                                    'px_170x170': 'http://i2.pixiv.net/img20/profile/cadillac/8457709.jpg',
+                                    'px_50x50': 'http://i2.pixiv.net/img20/profile/cadillac/8457709_s.jpg'
+                                },
+                                'is_premium': None,
+                                'stats': None
+                            },
+                            'title': 'ドルフィンシンフォニー',
+                            'sanity_level': 'white',
+                            'reuploaded_time': '2015-07-09 00:05:01',
+                            'tools': None,
+                            'id': 51320366,
+                            'publicity': 0,
+                            'created_time': '2015-07-09 00:05:00',
+                            'page_count': 1,
+                            'is_manga': None,
+                            'height': 1131,
+                            'caption': None,
+                            'tags': [
+                                '女子高生',
+                                'オリジナル',
+                                'セーラー服',
+                                'イルカ',
+                                '黒ハイソックス',
+                                'MDR-Z1000',
+                                '青',
+                                'ヘッドホン'
+                            ]
+                        }
+                    },XXX]
+                }
+            ]
 
         """
         self.login_required()

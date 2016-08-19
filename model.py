@@ -66,7 +66,7 @@ class PixivIllustModel(PixivModel):
             data = data['work']
 
         # not manga
-        if not data['is_manga']:
+        if data['page_count'] == 1:
             image_urls.append(data['image_urls']['large'])
         # manga
         else:
@@ -91,7 +91,7 @@ class PixivIllustModel(PixivModel):
             result: a list of instance contains illust information
         """
         illusts = []
-        for data in data_list:
+        for data in list(data_list):
             # ranking
             if cls.is_ranking(data):
                 works = data['works']
