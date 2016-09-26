@@ -14,17 +14,36 @@ Download illustrations by **uers\_id**, **daily ranking** or **history ranking**
 - [x] Update downloaded artists
 - [x] Refresh downloaded artists
 - [x] Mutil-Language
+- [x] Command-line interface
 
-## Requirement
 
-[Requests](http://docs.python-requests.org/)
+## Usage
 
-[PyCrypto](https://www.dlitz.net/software/pycrypto/)
+```
+Usage:
+    pixiv.py
+    pixiv.py <id>...
+    pixiv.py -r [-d | --date=<date>]
+    pixiv.py -u
+
+Arguments:
+    <id>                                       user_ids
+
+Options:
+    -r                                         Download by ranking
+    -d <date> --date <date>                    Target date
+    -u                                         Update exist folder
+    -h --help                                  Show this screen
+    -v --version                               Show version
+
+Examples:
+    pixiv.py 7210261 1980643
+    pixiv.py -r -d 2016-09-24
+```
 
 
 ## Screenshot
 
-pixiv.py
 
 ![img](https://raw.github.com/bebound/Pixiv/master/ScreenShot/4.png)
 

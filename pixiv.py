@@ -1,4 +1,27 @@
 #!/usr/bin/env python3
+"""
+pixiv
+
+Usage:
+    pixiv.py
+    pixiv.py <id>...
+    pixiv.py -r [-d | --date=<date>]
+    pixiv.py -u
+
+Arguments:
+    <id>                                       user_ids
+
+Options:
+    -r                                         Download by ranking
+    -d <date> --date <date>                    Target date
+    -u                                         Update exist folder
+    -h --help                                  Show this screen
+    -v --version                               Show version
+
+Examples:
+    pixiv.py 7210261 1980643
+    pixiv.py -r -d 2016-09-24
+"""
 import datetime
 import math
 import os
@@ -9,6 +32,7 @@ import threading
 import time
 
 import requests
+from docopt import docopt
 
 from api import PixivApi
 from i18n import i18n as _
@@ -137,7 +161,7 @@ def get_filepath(url, illustration, save_path='.', add_user_folder=False, add_ra
         user_name = illustration.user_name
         current_path = get_default_save_path()
 
-        cur_dirs = list(filter(os.path.isdir, [os.path.join(current_path,i) for i in os.listdir(current_path)]))
+        cur_dirs = list(filter(os.path.isdir, [os.path.join(current_path, i) for i in os.listdir(current_path)]))
         cur_user_ids = [cur_dir.split('/')[-1].split()[0] for cur_dir in cur_dirs]
 
         if user_id not in cur_user_ids:
@@ -198,10 +222,11 @@ def download_illustrations(data_list, save_path='.', add_user_folder=False, add_
         print(_('There is no new illustration need to download'))
 
 
-def download_by_user_id(user):
+def download_by_user_id(user, user_ids=None):
     save_path = get_default_save_path()
-    user_ids = input(_('Input the artist\'s id:(separate with space)'))
-    for user_id in user_ids.split(' '):
+    if not user_ids:
+        user_ids = input(_('Input the artist\'s id:(separate with space)')).split(' ')
+    for user_id in user_ids:
         print(_('Artists %s\n') % user_id)
         data_list = user.get_user_illustrations(user_id)
         download_illustrations(data_list, save_path, add_user_folder=True)
@@ -214,8 +239,9 @@ def download_by_ranking(user):
     download_illustrations(data_list, save_path, add_rank=True)
 
 
-def download_by_history_ranking(user):
-    date = input(_('Input the date:(eg:2015-07-10)'))
+def download_by_history_ranking(user, date=''):
+    if not date:
+        date = input(_('Input the date:(eg:2015-07-10)'))
     if not (re.search("^\d{4}-\d{2}-\d{2}", date)):
         print(_('[invalid]'))
         date = str(datetime.date.today())
@@ -261,30 +287,49 @@ def remove_repeat(user):
 
 
 def main():
-    print(_(' Pixiv Downloader 2.3 ').center(77, '#'))
+    print(_(' Pixiv Downloader 2.4 ').center(77, '#'))
     user = PixivApi()
-    options = {
-        '1': download_by_user_id,
-        '2': download_by_ranking,
-        '3': download_by_history_ranking,
-        '4': update_exist,
-        '5': remove_repeat
-    }
 
-    while True:
-        print(_('Which do you want to:'))
-        for i in sorted(options.keys()):
-            print('\t %s %s' % (i, _(options[i].__name__).replace('_', ' ')))
-        choose = input('\t e %s \n:' % _('exit'))
-        if choose in [str(i) for i in range(1, len(options) + 1)]:
-            print((' ' + _(options[choose].__name__).replace('_', ' ') + ' ').center(60, '#') + '\n')
-            options[choose](user)
-            print('\n' + (' ' + _(options[choose].__name__).replace('_', ' ') + _(' finished ')).center(60, '#') + '\n')
-        elif choose == 'e':
-            break
-        else:
-            print(_('Wrong input!'))
+    if len(sys.argv) > 1:
+        ids = arguments['<id>']
+        is_rank = arguments['-r']
+        date = arguments['--date']
+        is_update = arguments['-u']
+        if ids:
+            download_by_user_id(user, ids)
+        elif is_rank:
+            if date:
+                date = date[0]
+                download_by_history_ranking(user, date)
+            else:
+                download_by_ranking(user)
+        elif is_update:
+            update_exist(user)
+    else:
+        options = {
+            '1': download_by_user_id,
+            '2': download_by_ranking,
+            '3': download_by_history_ranking,
+            '4': update_exist,
+            '5': remove_repeat
+        }
+
+        while True:
+            print(_('Which do you want to:'))
+            for i in sorted(options.keys()):
+                print('\t %s %s' % (i, _(options[i].__name__).replace('_', ' ')))
+            choose = input('\t e %s \n:' % _('exit'))
+            if choose in [str(i) for i in range(1, len(options) + 1)]:
+                print((' ' + _(options[choose].__name__).replace('_', ' ') + ' ').center(60, '#') + '\n')
+                options[choose](user)
+                print('\n' + (' ' + _(options[choose].__name__).replace('_', ' ') + _(' finished ')).center(60,
+                                                                                                            '#') + '\n')
+            elif choose == 'e':
+                break
+            else:
+                print(_('Wrong input!'))
 
 
 if __name__ == '__main__':
+    arguments = docopt(__doc__, version='pixiv 2.4')
     sys.exit(main())
