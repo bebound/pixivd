@@ -116,6 +116,7 @@ def download_file(url, filepath):
 
 
 def download_threading(download_queue, save_path='.', add_user_folder=False, add_rank=False):
+    global _finished_download
     while not download_queue.empty():
         illustration = download_queue.get()
         for url in illustration.image_urls:
@@ -129,7 +130,6 @@ def download_threading(download_queue, save_path='.', add_user_folder=False, add
                     try:
                         download_file(url, filepath)
                         with _PROGRESS_LOCK:
-                            global _finished_download
                             _finished_download += 1
                     except Exception as e:
                         count = _error_count.get(url, 0)
@@ -138,13 +138,9 @@ def download_threading(download_queue, save_path='.', add_user_folder=False, add
                             download_queue.put(illustration)
                             _error_count[url] = count + 1
 
-
-
-
             else:
                 print(url, 'reach max retries, canceled')
                 with _PROGRESS_LOCK:
-                    global _finished_download
                     _finished_download += 1
 
         download_queue.task_done()
