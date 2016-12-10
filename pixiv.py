@@ -46,6 +46,7 @@ _PROGRESS_LOCK = threading.Lock()
 _SPEED_LOCK = threading.Lock()
 _Global_Download = 0
 _error_count = {}
+_fast_mode_size = 20
 
 
 def get_default_save_path():
@@ -258,7 +259,7 @@ def download_by_history_ranking(user, date=''):
     download_illustrations(data_list, save_path, add_rank=True)
 
 
-def update_exist(user):
+def update_exist(user, fast=True):
     current_path = get_default_save_path()
     for folder in os.listdir(get_default_save_path()):
         if os.path.isdir(os.path.join(current_path, folder)):
@@ -271,7 +272,19 @@ def update_exist(user):
                     except UnicodeError:
                         print(_('Artists %s ??\n') % user_id, end='')
                     save_path = current_path
-                    data_list = user.get_user_illustrations(user_id)
+                    per_page = 9999
+                    if fast:
+                        last_modified = os.path.getmtime(save_path)
+                        per_page = _fast_mode_size
+                        data_list = user.get_user_illustrations(get_id,per_page=per_page)
+                        if len(data_list) > 0:
+                            elapsed = time.mktime(time.strptime(data_list[-1]['created_time'],'%Y-%m-%d %H:%M:%S')) - last_modified
+                            while elapsed > 0:
+                                per_page += _fast_mode_size
+                                data_list = user.get_user_illustrations(user_id,per_page=per_page)
+                                elapsed = time.mktime(time.strptime(data_list[-1]['created_time'],'%Y-%m-%d %H:%M:%S')) - last_modified
+                    else:
+                        data_list = user.get_user_illustrations(user_id,per_page=per_page)
                     download_illustrations(data_list, save_path, add_user_folder=True)
             except Exception as e:
                 print(e)
