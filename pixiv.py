@@ -178,7 +178,7 @@ def get_filepath(url, illustration, save_path='.', add_user_folder=False, add_ra
         if user_id not in cur_user_ids:
             dir_name = re.sub(r'[<>:"/\\|\?\*]', ' ', user_id + ' ' + user_name)
         else:
-            dir_name = list(i for i in cur_dirs if os.path.basename(cur_dir).split(i) == user_id)[0]
+            dir_name = list(i for i in cur_dirs if os.path.basename(i).split()[0] == user_id)[0]
         save_path = os.path.join(save_path, dir_name)
 
     filename = url.split('/')[-1]
