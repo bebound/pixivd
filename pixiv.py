@@ -173,12 +173,12 @@ def get_filepath(url, illustration, save_path='.', add_user_folder=False, add_ra
         current_path = get_default_save_path()
 
         cur_dirs = list(filter(os.path.isdir, [os.path.join(current_path, i) for i in os.listdir(current_path)]))
-        cur_user_ids = [cur_dir.split('/')[-1].split()[0] for cur_dir in cur_dirs]
-
+        cur_user_ids = [os.path.basename(cur_dir).split()[0] for cur_dir in cur_dirs]
+        #print(cur_user_ids)
         if user_id not in cur_user_ids:
             dir_name = re.sub(r'[<>:"/\\|\?\*]', ' ', user_id + ' ' + user_name)
         else:
-            dir_name = list(i for i in cur_dirs if i.split('/')[-1].split()[0] == user_id)[0]
+            dir_name = list(i for i in cur_dirs if os.path.basename(cur_dir).split(i) == user_id)[0]
         save_path = os.path.join(save_path, dir_name)
 
     filename = url.split('/')[-1]
@@ -280,11 +280,11 @@ def update_exist(user, fast=True):
                         per_page = _fast_mode_size
                         data_list = user.get_user_illustrations(user_id,per_page=per_page)
                         if len(data_list) > 0:
-                            file_path = os.path.join(save_path,data_list[-1]['image_urls']['large'].split('/')[-1])
+                            file_path = os.path.join(save_path,folder,data_list[-1]['image_urls']['large'].split('/')[-1])
                             while not os.path.exists(file_path) and per_page <= len(data_list) :
                                 per_page += _fast_mode_size
                                 data_list = user.get_user_illustrations(user_id,per_page=per_page)
-                                file_path = os.path.join(save_path,data_list[-1]['image_urls']['large'].split('/')[-1])
+                                file_path = os.path.join(save_path,folder,data_list[-1]['image_urls']['large'].split('/')[-1])
                     else:
                         data_list = user.get_user_illustrations(user_id,per_page=per_page)
                     download_illustrations(data_list, save_path, add_user_folder=True)
