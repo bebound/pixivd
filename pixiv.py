@@ -125,7 +125,8 @@ def download_threading(download_queue, thread_id, save_path='.', add_user_folder
         filename = illustration['file']
         url = illustration['url']
         #print('T:%s fetch: %s'%(thread_id,filename))
-        if _error_count.get(url, 0) < _MAX_ERROR_COUNT:
+        count = _error_count.get(url, 0)
+        if count < _MAX_ERROR_COUNT:
             if not os.path.exists(filepath):
                 with _CREATE_FOLDER_LOCK:
                     if not os.path.exists(os.path.dirname(filepath)):
@@ -135,7 +136,6 @@ def download_threading(download_queue, thread_id, save_path='.', add_user_folder
                     with _PROGRESS_LOCK:
                         _finished_download += 1
                 except Exception as e:
-                    count = _error_count.get(url, 0)
                     if count < _MAX_ERROR_COUNT:
                         print(_('\r%s => %s download error, retry') % (e, filename))
                         download_queue.put(illustration)
@@ -277,12 +277,12 @@ def update_exist(user, fast=True):
                     save_path = current_path
                     per_page = 9999
                     if fast:
-                        per_page = 20
+                        per_page = _fast_mode_size
                         data_list = user.get_user_illustrations(user_id,per_page=per_page)
                         if len(data_list) > 0:
                             file_path = os.path.join(save_path,data_list[-1]['image_urls']['large'].split('/')[-1])
                             while not os.path.exists(file_path) and per_page <= len(data_list) :
-                                per_page += 20
+                                per_page += _fast_mode_size
                                 data_list = user.get_user_illustrations(user_id,per_page=per_page)
                                 file_path = os.path.join(save_path,data_list[-1]['image_urls']['large'].split('/')[-1])
                     else:
