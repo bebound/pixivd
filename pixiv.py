@@ -206,16 +206,17 @@ def count_illustrations(illustrations):
     return sum(len(i.image_urls) for i in illustrations)
 
 
-def download_illustrations(data_list, save_path='.', add_user_folder=False, add_rank=False):
+def download_illustrations(user, data_list, save_path='.', add_user_folder=False, add_rank=False):
     """Download illustratons
 
     Args:
+        user: PixivApi()
         data_list: json
         save_path: str, download path of the illustrations
         add_user_folder: bool, whether put the illustration into user folder
         add_rank: bool, add illustration rank at the beginning of filename
     """
-    illustrations = PixivIllustModel.from_data(data_list)
+    illustrations = PixivIllustModel.from_data(data_list, user)
     download_queue, count = check_files(illustrations, save_path, add_user_folder, add_rank)
     if count > 0:
         print(_('Start download, total illustrations '), count)
@@ -236,14 +237,14 @@ def download_by_user_id(user, user_ids=None):
     for user_id in user_ids:
         print(_('Artists %s\n') % user_id)
         data_list = user.get_user_illustrations(user_id)
-        download_illustrations(data_list, save_path, add_user_folder=True)
+        download_illustrations(user, data_list, save_path, add_user_folder=True)
 
 
 def download_by_ranking(user):
     today = str(datetime.date.today())
     save_path = os.path.join(get_default_save_path(), today + ' ranking')
     data_list = user.get_ranking_illustrations(per_page=100, mode='daily')
-    download_illustrations(data_list, save_path, add_rank=True)
+    download_illustrations(user,data_list, save_path, add_rank=True)
 
 
 def download_by_history_ranking(user, date=''):
@@ -254,7 +255,7 @@ def download_by_history_ranking(user, date=''):
         date = str(datetime.date.today())
     save_path = os.path.join(get_default_save_path(), date + ' ranking')
     data_list = user.get_ranking_illustrations(date=date, per_page=100, mode='daily')
-    download_illustrations(data_list, save_path, add_rank=True)
+    download_illustrations(user, data_list, save_path, add_rank=True)
 
 
 def update_exist(user, fast=True):

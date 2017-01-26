@@ -10,8 +10,8 @@ class PixivModel(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self):
-        pass
+    def __init__(self, user=None):
+        self.user = user
 
     @abstractmethod
     def from_data(self, data):
@@ -49,11 +49,14 @@ class PixivIllustModel(PixivModel):
         illust.user_profile_image_urls = data['user']['profile_image_urls']
         illust.sanity_level = data['sanity_level']
         illust.created_time = data['created_time']
+        illust.type = data['type']
         illust.page_count = data['page_count']
+        if illust.type == 'ugoira' and self.user:
+            r = self.user.get_illustration(illust.id)
+            illust.page_count = len(r[0]['metadata']['frames'])
         illust.is_manga = data['is_manga']
         illust.caption = data['caption']
         illust.tags = data['tags']
-
         return illust
 
     def get_image_url_per_illust(self, data):
@@ -66,25 +69,25 @@ class PixivIllustModel(PixivModel):
             data = data['work']
 
         # not manga
-        if data['page_count'] == 1:
+        if self.page_count == 1:
             image_urls.append(data['image_urls']['large'])
         # manga
         else:
-            for i in range(data['page_count']):
+            for i in range(self.page_count):
                 per_page_link = data['image_urls']['large'][:-5] + str(i) + data['image_urls']['large'][-4:]
                 image_urls.append(per_page_link)
         return image_urls
 
     @classmethod
-    def create_illust_from_data(cls, data):
-        illust = cls()
+    def create_illust_from_data(cls, data, user=None):
+        illust = cls(user)
         illust.extract_common_information(illust, data)
         image_urls = illust.get_image_url_per_illust(data)
         illust.image_urls = image_urls
         return illust
 
     @classmethod
-    def from_data(cls, data_list):
+    def from_data(cls, data_list, user=None):
         """parse data to dict contains illust information
 
         Return:
@@ -96,11 +99,11 @@ class PixivIllustModel(PixivModel):
             if cls.is_ranking(data):
                 works = data['works']
                 for work in works:
-                    illust = cls.create_illust_from_data(work)
+                    illust = cls.create_illust_from_data(work, user)
                     illusts.append(illust)
 
             # user_illusts or illust
             else:
-                illust = cls.create_illust_from_data(data)
+                illust = cls.create_illust_from_data(data, user)
                 illusts.append(illust)
         return illusts
