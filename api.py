@@ -384,7 +384,7 @@ class PixivApi:
             'profile_image_sizes': self.profile_image_sizes,
             'image_sizes': self.image_sizes,
             'include_stats': 'true',
-            'include_sanity_level': True,
+            'include_sanity_level': 'true',
         }
         r = self._request_pixiv('GET', url, params=params)
         return self.parse_result(r)
