@@ -244,7 +244,7 @@ def download_by_ranking(user):
     today = str(datetime.date.today())
     save_path = os.path.join(get_default_save_path(), today + ' ranking')
     data_list = user.get_ranking_illustrations(per_page=100, mode='daily')
-    download_illustrations(user,data_list, save_path, add_rank=True)
+    download_illustrations(user, data_list, save_path, add_rank=True)
 
 
 def download_by_history_ranking(user, date=''):
@@ -285,7 +285,7 @@ def update_exist(user, fast=True):
                                                          data_list[-1]['image_urls']['large'].split('/')[-1])
                     else:
                         data_list = user.get_user_illustrations(user_id, per_page=per_page)
-                    download_illustrations(data_list, save_path, add_user_folder=True)
+                    download_illustrations(user, data_list, save_path, add_user_folder=True)
             except Exception as e:
                 print(e)
 
