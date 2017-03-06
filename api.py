@@ -27,7 +27,7 @@ class PixivApi:
         user_id: str, login user id
         User_Agent: str, the version of pixiv app
     """
-    User_Agent = 'PixivIOSApp/5.8.3'
+    User_Agent = 'PixivIOSApp/6.4.0'
     session_id = None
     access_token = None
     session = ''
@@ -42,8 +42,8 @@ class PixivApi:
         if os.path.exists('session'):
             if self.load_session():
                 self.login(self.username, self.password)
-                if self.check_expired():
-                    return
+                # if self.check_expired():
+                    # return
         self.login_required()
 
     def load_session(self):
@@ -70,6 +70,7 @@ class PixivApi:
             if r.status_code in [200, 301, 302]:
                 try:
                     respond = json.loads(r.text)
+                    print(respond)
                     valid = respond['status'] == 'success'
                 except Exception as e:
                     print(e)
@@ -157,8 +158,13 @@ class PixivApi:
             self.access_token = respond['response']['access_token']
             self.user_id = str(respond['response']['user']['id'])
 
-            cookie = r.headers['Set-Cookie']
-            self.session_id = re.search(r'PHPSESSID=(.*?);', cookie).group(1)
+            try:
+                cookie = r.headers['Set-Cookie']
+                self.session_id = re.search(r'PHPSESSID=(.*?);', cookie).group(1)
+            except Exception as e:
+                pass
+                # print(r.headers)
+                # print(respond)
             # For relogin purpose
             self.password = password
             self.username = username
@@ -299,8 +305,8 @@ class PixivApi:
         except Pixiv_Get_Error:
             if self.username:
                 self.login(self.username, self.password)
-            else:
-                self.check_expired()
+            # else:
+                # self.check_expired()
             return self.get_user_illustrations(user_id, per_page, page)
 
     def get_illustration(self, illustration_id):
