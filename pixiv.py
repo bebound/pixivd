@@ -117,14 +117,13 @@ def download_file(url, filepath):
         raise ConnectionError('\r', _('Connection error: %s') % r.status_code)
 
 
-def download_threading(download_queue, thread_id, save_path='.', add_user_folder=False):
+def download_threading(download_queue):
     global _finished_download
     while not download_queue.empty():
         illustration = download_queue.get()
         filepath = illustration['path']
         filename = illustration['file']
         url = illustration['url']
-        #print('T:%s fetch: %s'%(thread_id,filename))
         count = _error_count.get(url, 0)
         if count < _MAX_ERROR_COUNT:
             if not os.path.exists(filepath):
@@ -145,18 +144,15 @@ def download_threading(download_queue, thread_id, save_path='.', add_user_folder
             with _PROGRESS_LOCK:
                 _finished_download += 1
         download_queue.task_done()
-        #print('T:%s done: %s'%(thread_id,filename))
-    #print('T:%s end'%(thread_id))
 
 
-def start_and_wait_download_threading(download_queue, save_path='.', add_user_folder=False):
+def start_and_wait_download_threading(download_queue):
     """start download threading and wait till complete"""
     p = threading.Thread(target=print_progress)
     p.daemon = True
     p.start()
     for i in range(_THREADING_NUMBER):
-        t = threading.Thread(target=download_threading,
-                             args=(download_queue, i, save_path, add_user_folder))
+        t = threading.Thread(target=download_threading, args=(download_queue,))
         t.daemon = True
         t.start()
 
@@ -174,7 +170,6 @@ def get_filepath(url, illustration, save_path='.', add_user_folder=False, add_ra
 
         cur_dirs = list(filter(os.path.isdir, [os.path.join(current_path, i) for i in os.listdir(current_path)]))
         cur_user_ids = [os.path.basename(cur_dir).split()[0] for cur_dir in cur_dirs]
-        #print(cur_user_ids)
         if user_id not in cur_user_ids:
             dir_name = re.sub(r'[<>:"/\\|\?\*]', ' ', user_id + ' ' + user_name)
         else:
@@ -202,33 +197,34 @@ def check_files(illustrations, save_path='.', add_user_folder=False, add_rank=Fa
                     if os.path.exists(filepath):
                         illustration.image_urls.remove(url)
                     else:
-                        download_queue.put({'url':url,'file':filename,'path':filepath})
-                        count+=1
-    return download_queue,count
+                        download_queue.put({'url': url, 'file': filename, 'path': filepath})
+                        count += 1
+    return download_queue, count
 
 
 def count_illustrations(illustrations):
     return sum(len(i.image_urls) for i in illustrations)
 
 
-def download_illustrations(data_list, save_path='.', add_user_folder=False, add_rank=False):
+def download_illustrations(user, data_list, save_path='.', add_user_folder=False, add_rank=False):
     """Download illustratons
 
     Args:
+        user: PixivApi()
         data_list: json
         save_path: str, download path of the illustrations
         add_user_folder: bool, whether put the illustration into user folder
         add_rank: bool, add illustration rank at the beginning of filename
     """
-    illustrations = PixivIllustModel.from_data(data_list)
-    download_queue,count = check_files(illustrations, save_path, add_user_folder, add_rank)
+    illustrations = PixivIllustModel.from_data(data_list, user)
+    download_queue, count = check_files(illustrations, save_path, add_user_folder, add_rank)
     if count > 0:
         print(_('Start download, total illustrations '), count)
         global _queue_size, _finished_download, _Global_Download
         _queue_size = count
         _finished_download = 0
         _Global_Download = 0
-        start_and_wait_download_threading(download_queue, save_path, add_user_folder)
+        start_and_wait_download_threading(download_queue)
         print()
     else:
         print(_('There is no new illustration need to download'))
@@ -241,14 +237,14 @@ def download_by_user_id(user, user_ids=None):
     for user_id in user_ids:
         print(_('Artists %s\n') % user_id)
         data_list = user.get_user_illustrations(user_id)
-        download_illustrations(data_list, save_path, add_user_folder=True)
+        download_illustrations(user, data_list, save_path, add_user_folder=True)
 
 
 def download_by_ranking(user):
     today = str(datetime.date.today())
     save_path = os.path.join(get_default_save_path(), today + ' ranking')
     data_list = user.get_ranking_illustrations(per_page=100, mode='daily')
-    download_illustrations(data_list, save_path, add_rank=True)
+    download_illustrations(user, data_list, save_path, add_rank=True)
 
 
 def download_by_history_ranking(user, date=''):
@@ -259,7 +255,7 @@ def download_by_history_ranking(user, date=''):
         date = str(datetime.date.today())
     save_path = os.path.join(get_default_save_path(), date + ' ranking')
     data_list = user.get_ranking_illustrations(date=date, per_page=100, mode='daily')
-    download_illustrations(data_list, save_path, add_rank=True)
+    download_illustrations(user, data_list, save_path, add_rank=True)
 
 
 def update_exist(user, fast=True):
@@ -278,16 +274,18 @@ def update_exist(user, fast=True):
                     per_page = 9999
                     if fast:
                         per_page = _fast_mode_size
-                        data_list = user.get_user_illustrations(user_id,per_page=per_page)
+                        data_list = user.get_user_illustrations(user_id, per_page=per_page)
                         if len(data_list) > 0:
-                            file_path = os.path.join(save_path,folder,data_list[-1]['image_urls']['large'].split('/')[-1])
-                            while not os.path.exists(file_path) and per_page <= len(data_list) :
+                            file_path = os.path.join(save_path, folder,
+                                                     data_list[-1]['image_urls']['large'].split('/')[-1])
+                            while not os.path.exists(file_path) and per_page <= len(data_list):
                                 per_page += _fast_mode_size
-                                data_list = user.get_user_illustrations(user_id,per_page=per_page)
-                                file_path = os.path.join(save_path,folder,data_list[-1]['image_urls']['large'].split('/')[-1])
+                                data_list = user.get_user_illustrations(user_id, per_page=per_page)
+                                file_path = os.path.join(save_path, folder,
+                                                         data_list[-1]['image_urls']['large'].split('/')[-1])
                     else:
-                        data_list = user.get_user_illustrations(user_id,per_page=per_page)
-                    download_illustrations(data_list, save_path, add_user_folder=True)
+                        data_list = user.get_user_illustrations(user_id, per_page=per_page)
+                    download_illustrations(user, data_list, save_path, add_user_folder=True)
             except Exception as e:
                 print(e)
 
