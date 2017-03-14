@@ -28,7 +28,6 @@ class PixivApi:
         User_Agent: str, the version of pixiv app
     """
     User_Agent = 'PixivIOSApp/6.4.0'
-    session_id = None
     access_token = None
     session = ''
     user_id = ''
@@ -81,8 +80,7 @@ class PixivApi:
             'Content-Type': 'application/x-www-form-urlencoded',
         }
         if self.access_token:
-            pixiv_headers.update({'Authorization': 'Bearer {}'.format(self.access_token),
-                                  'Cookie': 'PHPSESSID={}'.format(self.session_id)})
+            pixiv_headers.update({'Authorization': 'Bearer {}'.format(self.access_token)})
         if headers:
             pixiv_headers.update(headers)
 
@@ -129,13 +127,6 @@ class PixivApi:
             self.access_token = respond['response']['access_token']
             self.user_id = str(respond['response']['user']['id'])
 
-            try:
-                cookie = r.headers['Set-Cookie']
-                self.session_id = re.search(r'PHPSESSID=(.*?);', cookie).group(1)
-            except Exception as e:
-                pass
-                # print(r.headers)
-                # print(respond)
             # For relogin purpose
             self.password = password
             self.username = username
