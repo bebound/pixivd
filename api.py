@@ -42,8 +42,6 @@ class PixivApi:
         if os.path.exists('session'):
             if self.load_session():
                 self.login(self.username, self.password)
-                # if self.check_expired():
-                    # return
         self.login_required()
 
     def load_session(self):
@@ -58,33 +56,6 @@ class PixivApi:
             self.password = loaded_session['passwd']
         finally:
             return loaded_session
-
-    def check_expired(self):
-        url = 'https://public-api.secure.pixiv.net/v1/ios_magazine_banner.json'
-        print(_('Checking session'), end="", flush=True)
-
-        valid = False
-        try:
-            r = self._request_pixiv('GET', url)
-
-            if r.status_code in [200, 301, 302]:
-                try:
-                    respond = json.loads(r.text)
-                    print(respond)
-                    valid = respond['status'] == 'success'
-                except Exception as e:
-                    print(e)
-                    valid = False
-                finally:
-                    pass
-        except Exception as e:
-            print(e)
-        if valid:
-            print(_(' [VALID]'))
-        else:
-            print(_(' [EXPIRED]'))
-            self.access_token = None
-        return valid
 
     def save_session(self):
         data = {
@@ -305,8 +276,6 @@ class PixivApi:
         except Pixiv_Get_Error:
             if self.username:
                 self.login(self.username, self.password)
-            # else:
-                # self.check_expired()
             return self.get_user_illustrations(user_id, per_page, page)
 
     def get_illustration(self, illustration_id):
