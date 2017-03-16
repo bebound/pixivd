@@ -28,7 +28,6 @@ class PixivApi:
         User_Agent: str, the version of pixiv app
     """
     User_Agent = 'PixivIOSApp/6.4.0'
-    session_id = None
     access_token = None
     session = ''
     user_id = ''
@@ -42,8 +41,6 @@ class PixivApi:
         if os.path.exists('session'):
             if self.load_session():
                 self.login(self.username, self.password)
-                # if self.check_expired():
-                    # return
         self.login_required()
 
     def load_session(self):
@@ -58,33 +55,6 @@ class PixivApi:
             self.password = loaded_session['passwd']
         finally:
             return loaded_session
-
-    def check_expired(self):
-        url = 'https://public-api.secure.pixiv.net/v1/ios_magazine_banner.json'
-        print(_('Checking session'), end="", flush=True)
-
-        valid = False
-        try:
-            r = self._request_pixiv('GET', url)
-
-            if r.status_code in [200, 301, 302]:
-                try:
-                    respond = json.loads(r.text)
-                    print(respond)
-                    valid = respond['status'] == 'success'
-                except Exception as e:
-                    print(e)
-                    valid = False
-                finally:
-                    pass
-        except Exception as e:
-            print(e)
-        if valid:
-            print(_(' [VALID]'))
-        else:
-            print(_(' [EXPIRED]'))
-            self.access_token = None
-        return valid
 
     def save_session(self):
         data = {
@@ -110,8 +80,7 @@ class PixivApi:
             'Content-Type': 'application/x-www-form-urlencoded',
         }
         if self.access_token:
-            pixiv_headers.update({'Authorization': 'Bearer {}'.format(self.access_token),
-                                  'Cookie': 'PHPSESSID={}'.format(self.session_id)})
+            pixiv_headers.update({'Authorization': 'Bearer {}'.format(self.access_token)})
         if headers:
             pixiv_headers.update(headers)
 
@@ -158,13 +127,6 @@ class PixivApi:
             self.access_token = respond['response']['access_token']
             self.user_id = str(respond['response']['user']['id'])
 
-            try:
-                cookie = r.headers['Set-Cookie']
-                self.session_id = re.search(r'PHPSESSID=(.*?);', cookie).group(1)
-            except Exception as e:
-                pass
-                # print(r.headers)
-                # print(respond)
             # For relogin purpose
             self.password = password
             self.username = username
@@ -305,8 +267,6 @@ class PixivApi:
         except Pixiv_Get_Error:
             if self.username:
                 self.login(self.username, self.password)
-            # else:
-                # self.check_expired()
             return self.get_user_illustrations(user_id, per_page, page)
 
     def get_illustration(self, illustration_id):
