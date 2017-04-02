@@ -121,20 +121,20 @@ msgstr "输入错误"
 #~ msgid " Pixiv Downloader 2.2 "
 #~ msgstr " Pixiv 下载器 2.2 "
 
-#~ msgid "download_by_user_id"
-#~ msgstr "下载指定艺术家作品"
+msgid "download_by_user_id"
+msgstr "下载指定艺术家作品"
 
-#~ msgid "download_by_ranking"
-#~ msgstr "下载今日排行榜"
+msgid "download_by_ranking"
+msgstr "下载今日排行榜"
 
-#~ msgid "download_by_history_ranking"
-#~ msgstr "下载历史排行榜"
+msgid "download_by_history_ranking"
+msgstr "下载历史排行榜"
 
-#~ msgid "update_exist"
-#~ msgstr "更新已存在艺术家作品"
+msgid "update_exist"
+msgstr "更新已存在艺术家作品"
 
-#~ msgid "refresh_exist"
-#~ msgstr "刷新已存在艺术家作品"
+msgid "refresh_exist"
+msgstr "刷新已存在艺术家作品"
 
 #~ msgid "Checking session"
 #~ msgstr "验证会话"

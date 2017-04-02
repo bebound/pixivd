@@ -278,11 +278,11 @@ def artist_folder_scanner(user, user_id_list, save_path, final_list, fast):
             else:
                 data_list = user.get_user_illustrations(user_id, per_page=per_page)
             illustrations = PixivIllustModel.from_data(data_list, user)
-            count, checked_list = check_files(illustrations, save_path, add_user_folder=True, add_rank=False)[1:2]
+            count, checked_list = check_files(illustrations, save_path, add_user_folder=True, add_rank=False)[1:3]
             try:
-                print(_('Artists %s [%s]') % (folder, count), end='')
+                print(_('Artists %s [%s]') % (folder, count))
             except UnicodeError:
-                print(_('Artists %s ?? [%s]') % (user_id, count), end='')
+                print(_('Artists %s ?? [%s]') % (user_id, count))
             with _PROGRESS_LOCK:
                 final_list.extend(checked_list)
         except Exception as e:
