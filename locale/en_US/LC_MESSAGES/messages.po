@@ -7,133 +7,140 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-01-08 12:06+0800\n"
-"PO-Revision-Date: 2016-05-21 20:36+1000\n"
+"POT-Creation-Date: 2017-04-02 15:39-0400\n"
+"PO-Revision-Date: 2017-04-02 15:39-0400\n"
+"Last-Translator: \n"
+"Language-Team: \n"
 "Language: en_US\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Last-Translator: \n"
-"Language-Team: \n"
-"X-Generator: Poedit 1.8.7\n"
+"X-Generator: Poedit 1.8.7.1\n"
 
-#: Pixiv Downloader.py:138
+#: api.py:97
+msgid "Unknown Method:"
+msgstr "Unknown Method:"
+
+#: api.py:102 api.py:135 api.py:170
+msgid "[ERROR] connection failed!"
+msgstr "[ERROR] connection failed!"
+
+#: api.py:139
+msgid "Please login"
+msgstr "Please login"
+
+#: api.py:140
+msgid "username:"
+msgstr "username:"
+
+#: api.py:141
+msgid "password:"
+msgstr "password:"
+
+#: pixiv.py:119
 #, python-format
 msgid "Connection error: %s"
 msgstr "Connection error: %s"
 
-#: Pixiv Downloader.py:140
-msgid "process cancelled"
-msgstr "process cancelled"
-
-#: Pixiv Downloader.py:142
+#: pixiv.py:141
 #, python-format
-msgid "%s => %s download failed"
-msgstr "%s => %s download failed"
+msgid "\r%s => %s download error, retry"
+msgstr "\r%s => %s download error, retry"
 
-#: Pixiv Downloader.py:144
-#, python-format
-msgid "%s => %s download error, retry"
-msgstr "%s => %s download error, retry"
-
-#: Pixiv Downloader.py:200
+#: pixiv.py:225
 msgid "Start download, total illustrations "
 msgstr "Start download, total illustrations "
 
-#: Pixiv Downloader.py:216
+#: pixiv.py:233
 msgid "There is no new illustration need to download"
 msgstr "There is no new illustration need to download"
 
-#: Pixiv Downloader.py:221
+#: pixiv.py:239
 msgid "Input the artist's id:(separate with space)"
 msgstr "Input the artist's id:(separate with space)"
 
-#: Pixiv Downloader.py:223 Downloader.py:264
-#, python-format
-msgid "Artists %s ??\n"
-msgstr "Artists %s ??\n"
-
-#: Pixiv Downloader.py:236
-msgid "Input the date:(eg:2015-07-10)"
-msgstr "Input the date:(eg:2015-07-10)"
-
-#: Pixiv Downloader.py:238
-msgid "[invalid]"
-msgstr "[invalid]"
-
-#: Pixiv Downloader.py:262
+#: pixiv.py:241
 #, python-format
 msgid "Artists %s\n"
 msgstr "Artists %s\n"
 
-#: Pixiv Downloader.py:273
-msgid " Pixiv Downloader 2.2 "
-msgstr " Pixiv Downloader 2.2 "
+#: pixiv.py:255
+msgid "Input the date:(eg:2015-07-10)"
+msgstr "Input the date:(eg:2015-07-10)"
 
-#: Pixiv Downloader.py:284
+#: pixiv.py:257
+msgid "[invalid]"
+msgstr "[invalid]"
+
+#: pixiv.py:284
+#, python-format
+msgid "Artists %s [%s]"
+msgstr "Artists %s [%s]"
+
+#: pixiv.py:286
+#, python-format
+msgid "Artists %s ?? [%s]"
+msgstr "Artists %s ?? [%s]"
+
+#: pixiv.py:314
+msgid "Dangerous Action: continue?(y/n)"
+msgstr "Dangerous Action: continue?(y/n)"
+
+#: pixiv.py:331
+msgid " Pixiv Downloader 2.4 "
+msgstr " Pixiv Downloader 2.4 "
+
+#: pixiv.py:359
 msgid "Which do you want to:"
 msgstr "Which do you want to:"
 
-#: Pixiv Downloader.py:287
+#: pixiv.py:362
 msgid "exit"
 msgstr "exit"
 
-#: Pixiv Downloader.py:289
-msgid "download_by_user_id"
-msgstr "download_by_user_id"
-
-#: Pixiv Downloader.py:290
-msgid "download_by_ranking"
-msgstr "download_by_ranking"
-
-#: Pixiv Downloader.py:291
-msgid "download_by_history_ranking"
-msgstr "download_by_history_ranking"
-
-#: Pixiv Downloader.py:292
-msgid "update_exist"
-msgstr "update_exist"
-
-#: Pixiv Downloader.py:293
-msgid "refresh_exist"
-msgstr "refresh_exist"
-
-#: Pixiv Downloader.py:295
+#: pixiv.py:366
 msgid " finished "
 msgstr " finished "
 
-#: Pixiv Downloader.py:299
+#: pixiv.py:370
 msgid "Wrong input!"
 msgstr "Wrong input!"
 
-#: api.py:49
-msgid "Checking session"
-msgstr "Checking session"
+#~ msgid "process cancelled"
+#~ msgstr "process cancelled"
 
-#: api.py:63
-msgid " [VALID]"
-msgstr " [VALID]"
+#~ msgid "%s => %s download failed"
+#~ msgstr "%s => %s download failed"
 
-#: api.py:65
-msgid " [EXPIRED]"
-msgstr " [EXPIRED]"
+#~ msgid "%s => %s download error, retry"
+#~ msgstr "%s => %s download error, retry"
 
-#: api.py:106
-msgid "Unknown Method:"
-msgstr "Unknown Method:"
+#~ msgid "Artists %s ??\n"
+#~ msgstr "Artists %s ??\n"
 
-#: api.py:147
-msgid "[ERROR] connection failed!"
-msgstr "[ERROR] connection failed!"
+#~ msgid " Pixiv Downloader 2.2 "
+#~ msgstr " Pixiv Downloader 2.2 "
 
-#: api.py:151
-msgid "Please login"
-msgstr "Please login"
+#~ msgid "download_by_user_id"
+#~ msgstr "download_by_user_id"
 
-#: api.py:152
-msgid "username:"
-msgstr "username:"
+#~ msgid "download_by_ranking"
+#~ msgstr "download_by_ranking"
 
-#: api.py:153
-msgid "password:"
-msgstr "password:"
+#~ msgid "download_by_history_ranking"
+#~ msgstr "download_by_history_ranking"
+
+#~ msgid "update_exist"
+#~ msgstr "update_exist"
+
+#~ msgid "refresh_exist"
+#~ msgstr "refresh_exist"
+
+#~ msgid "Checking session"
+#~ msgstr "Checking session"
+
+#~ msgid " [VALID]"
+#~ msgstr " [VALID]"
+
+#~ msgid " [EXPIRED]"
+#~ msgstr " [EXPIRED]"
