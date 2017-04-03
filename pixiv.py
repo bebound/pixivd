@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 #!/usr/bin/env python3
 """
 pixiv
@@ -186,10 +187,11 @@ def get_filepath(url, illustration, save_path='.', add_user_folder=False, add_ra
 
 def check_files(illustrations, save_path='.', add_user_folder=False, add_rank=False):
     download_queue = queue.Queue()
-    final_list = []
+    index_list = []
     count = 0
     if illustrations:
-        for illustration in illustrations:
+        last_i = -1
+        for index, illustration in enumerate(illustrations):
             if not illustration.image_urls:
                 continue
             else:
@@ -198,10 +200,12 @@ def check_files(illustrations, save_path='.', add_user_folder=False, add_rank=Fa
                     if os.path.exists(filepath):
                         continue
                     else:
+                        if last_i != index:
+                            last_i = index
+                            index_list.append(index)
                         download_queue.put({'url': url, 'file': filename, 'path': filepath})
-                        final_list.append(illustration)
                         count += 1
-    return download_queue, count, final_list
+    return download_queue, count, index_list
 
 
 def count_illustrations(illustrations):
@@ -284,7 +288,8 @@ def artist_folder_scanner(user, user_id_list, save_path, final_list, fast):
             except UnicodeError:
                 print(_('Artists %s ?? [%s]') % (user_id, count))
             with _PROGRESS_LOCK:
-                final_list.extend(checked_list)
+                for index in checked_list:
+                    final_list.append(data_list[index])
         except Exception as e:
             print(e)
         user_id_list.task_done()
