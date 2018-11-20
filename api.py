@@ -12,8 +12,9 @@ from i18n import i18n as _
 
 
 class Pixiv_Get_Error(Exception):
-    def __init__(self, url):
+    def __init__(self, url, Err = None):
         self.url = url
+        self.error = Err
 
     def __str__(self):
         return 'Failed to get data: ' + self.url
@@ -28,12 +29,13 @@ class PixivApi:
         User_Agent: str, the version of pixiv app
     """
     User_Agent = 'PixivIOSApp/6.4.0'
+    session_id = None
     access_token = None
     session = ''
     user_id = ''
     image_sizes = ','.join(['px_128x128', 'px_480mw', 'small', 'medium', 'large'])
     profile_image_sizes = ','.join(['px_170x170', 'px_50x50'])
-    timeout = 10
+    timeout = 20
     username = ''
     password = ''
 
@@ -41,6 +43,8 @@ class PixivApi:
         if os.path.exists('session'):
             if self.load_session():
                 self.login(self.username, self.password)
+                # if self.check_expired():
+                    # return
         self.login_required()
 
     def load_session(self):
@@ -49,12 +53,39 @@ class PixivApi:
         with open('session', 'rb') as f:
             enc = f.read()
         try:
-            plain = cipher.decrypt(enc).decode()
+            plain = cipher.decrypt(enc)
             loaded_session = json.loads(str(plain))
             self.username = loaded_session['username']
             self.password = loaded_session['passwd']
         finally:
             return loaded_session
+
+    def check_expired(self):
+        url = 'https://public-api.secure.pixiv.net/v1/ios_magazine_banner.json'
+        print(_('Checking session'), end="", flush=True)
+
+        valid = False
+        try:
+            r = self._request_pixiv('GET', url)
+
+            if r.status_code in [200, 301, 302]:
+                try:
+                    respond = json.loads(r.text)
+                    print(respond)
+                    valid = respond['status'] == 'success'
+                except Exception as e:
+                    print(e)
+                    valid = False
+                finally:
+                    pass
+        except Exception as e:
+            print(e)
+        if valid:
+            print(_(' [VALID]'))
+        else:
+            print(_(' [EXPIRED]'))
+            self.access_token = None
+        return valid
 
     def save_session(self):
         data = {
@@ -80,7 +111,8 @@ class PixivApi:
             'Content-Type': 'application/x-www-form-urlencoded',
         }
         if self.access_token:
-            pixiv_headers.update({'Authorization': 'Bearer {}'.format(self.access_token)})
+            pixiv_headers.update({'Authorization': 'Bearer {}'.format(self.access_token),
+                                  'Cookie': 'PHPSESSID={}'.format(self.session_id)})
         if headers:
             pixiv_headers.update(headers)
 
@@ -127,6 +159,13 @@ class PixivApi:
             self.access_token = respond['response']['access_token']
             self.user_id = str(respond['response']['user']['id'])
 
+            try:
+                cookie = r.headers['Set-Cookie']
+                self.session_id = re.search(r'PHPSESSID=(.*?);', cookie).group(1)
+            except Exception as e:
+                pass
+                # print(r.headers)
+                # print(respond)
             # For relogin purpose
             self.password = password
             self.username = username
@@ -164,12 +203,12 @@ class PixivApi:
         data = json.loads(r.text)
         if data['status'] == 'success':
             return data['response']
-        elif ['has_error']:
-            raise Pixiv_Get_Error(r.url)
+        elif data['has_error']:
+            raise Pixiv_Get_Error(r.url, data['errors'])
         else:
             raise RuntimeError(_('[ERROR] connection failed!'), r.url, data)
 
-    def get_user_illustrations(self, user_id, per_page=9999, page=1):
+    def get_user_illustrations(self, user_id, per_page=9999, page=1, retry=5):
         """
         get illustrations by user id
 
@@ -264,10 +303,20 @@ class PixivApi:
         r = self._request_pixiv('GET', url, params=params)
         try:
             return self.parse_result(r)
-        except Pixiv_Get_Error:
+        except Pixiv_Get_Error as e:
+            if e.error['system']:
+                if e.error['system']['code'] == 971:
+                    print(_('Artist %s Fetch Failed, %s') % (user_id, e.error['system']['message']))
+                    return []
             if self.username:
                 self.login(self.username, self.password)
-            return self.get_user_illustrations(user_id, per_page, page)
+            # else:
+                # self.check_expired()
+            if retry > 0:
+                return self.get_user_illustrations(user_id, per_page, page, retry = retry-1 )
+            else:
+                print(_('Artist %s Fetch Failed') % (user_id))
+                return []
 
     def get_illustration(self, illustration_id):
         """

@@ -151,16 +151,18 @@ def download_threading(download_queue):
 
 def start_and_wait_download_threading(download_queue):
     """start download threading and wait till complete"""
-    progress_t = threading.Thread(target=print_progress)
-    progress_t.daemon = True
-    progress_t.start()
+    if len(sys.argv) < 2:
+        progress_t = threading.Thread(target=print_progress)
+        progress_t.daemon = True
+        progress_t.start()
     for i in range(_THREADING_NUMBER):
         download_t = threading.Thread(target=download_threading, args=(download_queue,))
         download_t.daemon = True
         download_t.start()
 
     download_queue.join()
-    progress_t.join()
+    if len(sys.argv) < 2:
+        progress_t.join()
 
 
 def get_filepath(url, illustration, save_path='.', add_user_folder=False, add_rank=False):
@@ -283,10 +285,11 @@ def artist_folder_scanner(user, user_id_list, save_path, final_list, fast):
                 data_list = user.get_user_illustrations(user_id, per_page=per_page)
             illustrations = PixivIllustModel.from_data(data_list, user)
             count, checked_list = check_files(illustrations, save_path, add_user_folder=True, add_rank=False)[1:3]
-            try:
-                print(_('Artists %s [%s]') % (folder, count))
-            except UnicodeError:
-                print(_('Artists %s ?? [%s]') % (user_id, count))
+            if len(sys.argv) < 2 or count:
+                try:
+                    print(_('Artists %s [%s]') % (folder, count))
+                except UnicodeError:
+                    print(_('Artists %s ?? [%s]') % (user_id, count))
             with _PROGRESS_LOCK:
                 for index in checked_list:
                     final_list.append(data_list[index])
@@ -332,10 +335,9 @@ def remove_repeat(user):
 
 
 def main():
-    print(_(' Pixiv Downloader 2.4 ').center(77, '#'))
     user = PixivApi()
-
     if len(sys.argv) > 1:
+        print (datetime.datetime.now().strftime('%X %x'))
         ids = arguments['<id>']
         is_rank = arguments['-r']
         date = arguments['--date']
@@ -350,7 +352,9 @@ def main():
                 download_by_ranking(user)
         elif is_update:
             update_exist(user)
+        print (datetime.datetime.now().strftime('%X %x'))
     else:
+        print(_(' Pixiv Downloader 2.4 ').center(77, '#'))
         options = {
             '1': download_by_user_id,
             '2': download_by_ranking,
@@ -366,7 +370,10 @@ def main():
             choose = input('\t e %s \n:' % _('exit'))
             if choose in [str(i) for i in range(1, len(options) + 1)]:
                 print((' ' + _(options[choose].__name__).replace('_', ' ') + ' ').center(60, '#') + '\n')
-                options[choose](user)
+                if choose == 4:
+                    options[choose](user,False)
+                else:
+                    options[choose](user)
                 print('\n' + (' ' + _(options[choose].__name__).replace('_', ' ') + _(' finished ')).center(60,'#') + '\n')
             elif choose == 'e':
                 break
