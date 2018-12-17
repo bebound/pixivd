@@ -171,7 +171,7 @@ def get_filepath(url, illustration, save_path='.', add_user_folder=False, add_ra
         user_id = illustration.user_id
         user_name = illustration.user_name
         current_path = get_default_save_path()
-        cur_dirs = list(filter(os.path.isdir,[os.path.join(current_path, i) for i in os.listdir(current_path)]))
+        cur_dirs = list(filter(os.path.isdir, [os.path.join(current_path, i) for i in os.listdir(current_path)]))
         cur_user_ids = [os.path.basename(cur_dir).split()[0] for cur_dir in cur_dirs]
         if user_id not in cur_user_ids:
             dir_name = re.sub(r'[<>:"/\\|\?\*]', ' ', user_id + ' ' + user_name)
@@ -264,6 +264,7 @@ def download_by_history_ranking(user, date=''):
     data_list = user.get_ranking_illustrations(date=date, per_page=100, mode='daily')
     download_illustrations(user, data_list, save_path, add_rank=True)
 
+
 def artist_folder_scanner(user, user_id_list, save_path, final_list, fast):
     while not user_id_list.empty():
         user_info = user_id_list.get()
@@ -275,11 +276,11 @@ def artist_folder_scanner(user, user_id_list, save_path, final_list, fast):
                 per_page = _fast_mode_size
                 data_list = user.get_user_illustrations(user_id, per_page=per_page)
                 if len(data_list) > 0:
-                    file_path = os.path.join(save_path, folder,data_list[-1]['image_urls']['large'].split('/')[-1])
+                    file_path = os.path.join(save_path, folder, data_list[-1]['image_urls']['large'].split('/')[-1])
                     while not os.path.exists(file_path) and per_page <= len(data_list):
                         per_page += _fast_mode_size
                         data_list = user.get_user_illustrations(user_id, per_page=per_page)
-                        file_path = os.path.join(save_path, folder,data_list[-1]['image_urls']['large'].split('/')[-1])
+                        file_path = os.path.join(save_path, folder, data_list[-1]['image_urls']['large'].split('/')[-1])
             else:
                 data_list = user.get_user_illustrations(user_id, per_page=per_page)
             illustrations = PixivIllustModel.from_data(data_list, user)
@@ -306,9 +307,10 @@ def update_exist(user, fast=True):
             user_id = re.search('^(\d+) ', folder)
             if user_id:
                 user_id = user_id.group(1)
-                user_id_list.put({'id' : user_id, 'folder' : folder})
+                user_id_list.put({'id': user_id, 'folder': folder})
     for i in range(_THREADING_NUMBER):
-        scan_t = threading.Thread(target=artist_folder_scanner, args=(user, user_id_list, current_path, final_list, fast,))
+        scan_t = threading.Thread(target=artist_folder_scanner,
+                                  args=(user, user_id_list, current_path, final_list, fast,))
         scan_t.daemon = True
         scan_t.start()
     user_id_list.join()
@@ -328,7 +330,7 @@ def remove_repeat(user):
                         illustration_id = re.search('^\d+\.', file_name)
                         if illustration_id:
                             if os.path.isfile(os.path.join(path
-                            , illustration_id.string.replace('.', '_p0.'))):
+                                    , illustration_id.string.replace('.', '_p0.'))):
                                 os.remove(os.path.join(path, file_name))
                                 print('Delete', os.path.join(path, file_name))
 
@@ -336,7 +338,7 @@ def remove_repeat(user):
 def main():
     user = PixivApi()
     if len(sys.argv) > 1:
-        print (datetime.datetime.now().strftime('%X %x'))
+        print(datetime.datetime.now().strftime('%X %x'))
         ids = arguments['<id>']
         is_rank = arguments['-r']
         date = arguments['--date']
@@ -351,7 +353,7 @@ def main():
                 download_by_ranking(user)
         elif is_update:
             update_exist(user)
-        print (datetime.datetime.now().strftime('%X %x'))
+        print(datetime.datetime.now().strftime('%X %x'))
     else:
         print(_(' Pixiv Downloader 2.4 ').center(77, '#'))
         options = {
@@ -370,10 +372,11 @@ def main():
             if choose in [str(i) for i in range(1, len(options) + 1)]:
                 print((' ' + _(options[choose].__name__).replace('_', ' ') + ' ').center(60, '#') + '\n')
                 if choose == 4:
-                    options[choose](user,False)
+                    options[choose](user, False)
                 else:
                     options[choose](user)
-                print('\n' + (' ' + _(options[choose].__name__).replace('_', ' ') + _(' finished ')).center(60,'#') + '\n')
+                print('\n' + (' ' + _(options[choose].__name__).replace('_', ' ') + _(' finished ')).center(60,
+                                                                                                            '#') + '\n')
             elif choose == 'e':
                 break
             else:
