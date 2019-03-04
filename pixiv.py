@@ -33,13 +33,13 @@ import time
 
 import requests
 from docopt import docopt
+from tqdm import tqdm
 
 from api import PixivApi
 from i18n import i18n as _
 from model import PixivIllustModel
 
 _THREADING_NUMBER = 10
-_queue_size = 0
 _finished_download = 0
 _CREATE_FOLDER_LOCK = threading.Lock()
 _PROGRESS_LOCK = threading.Lock()
@@ -76,29 +76,17 @@ def get_speed(elapsed):
     return '%6.2f %s/s' % (speed, units[unit])
 
 
-def print_progress():
-    global _finished_download, _queue_size
-    start = time.time()
-    while not _finished_download == _queue_size:
-        time.sleep(1)
-        elapsed = time.time() - start
-        start = time.time()
-        number_of_sharp = round(_finished_download / _queue_size * 50)
-        number_of_space = 50 - number_of_sharp
-        percent = _finished_download / _queue_size * 100
-        if number_of_sharp < 21:
-            sys.stdout.write('\r[' + '#' * number_of_sharp + ' ' * (number_of_space - 29) +
-                             ' %6.2f%% ' % percent + ' ' * 21 + '] (' + str(_finished_download) +
-                             '/' + str(_queue_size) + ')' + '[%s]  ' % get_speed(elapsed))
-        elif number_of_sharp > 29:
-            sys.stdout.write('\r[' + '#' * 21 + ' %6.2f%% ' % percent + '#' *
-                             (number_of_sharp - 29) + ' ' * number_of_space + '] (' +
-                             str(_finished_download) + '/' + str(_queue_size) + ')' +
-                             '[%s]  ' % get_speed(elapsed))
-        else:
-            sys.stdout.write('\r[' + '#' * 21 + ' %6.2f%% ' % percent + ' ' * 21 + '] (' +
-                             str(_finished_download) + '/' + str(_queue_size) + ')' +
-                             '[%s]  ' % get_speed(elapsed))
+def print_progress(max_size):
+    global _finished_download
+    pbar = tqdm(total=max_size)
+
+    last = 0
+    while _finished_download != max_size:
+        pbar.update(_finished_download - last)
+        last = _finished_download
+        time.sleep(0.5)
+    pbar.update(_finished_download - last)
+    pbar.close()
 
 
 def download_file(url, filepath):
@@ -148,20 +136,18 @@ def download_threading(download_queue):
         download_queue.task_done()
 
 
-def start_and_wait_download_threading(download_queue):
+def start_and_wait_download_threading(download_queue, count):
     """start download threading and wait till complete"""
-    if len(sys.argv) < 2:
-        progress_t = threading.Thread(target=print_progress)
-        progress_t.daemon = True
-        progress_t.start()
+    progress_t = threading.Thread(target=print_progress, args=(count,))
+    progress_t.daemon = True
+    progress_t.start()
     for i in range(_THREADING_NUMBER):
         download_t = threading.Thread(target=download_threading, args=(download_queue,))
         download_t.daemon = True
         download_t.start()
 
+    progress_t.join()
     download_queue.join()
-    if len(sys.argv) < 2:
-        progress_t.join()
 
 
 def get_filepath(url, illustration, save_path='.', add_user_folder=False, add_rank=False):
@@ -227,11 +213,10 @@ def download_illustrations(user, data_list, save_path='.', add_user_folder=False
     download_queue, count = check_files(illustrations, save_path, add_user_folder, add_rank)[0:2]
     if count > 0:
         print(_('Start download, total illustrations '), count)
-        global _queue_size, _finished_download, _Global_Download
-        _queue_size = count
+        global _finished_download, _Global_Download
         _finished_download = 0
         _Global_Download = 0
-        start_and_wait_download_threading(download_queue)
+        start_and_wait_download_threading(download_queue, count)
         print()
     else:
         print(_('There is no new illustration need to download'))
@@ -242,7 +227,7 @@ def download_by_user_id(user, user_ids=None):
     if not user_ids:
         user_ids = input(_('Input the artist\'s id:(separate with space)')).split(' ')
     for user_id in user_ids:
-        print(_('Artists %s\n') % user_id)
+        print(_('Artists %s') % user_id)
         data_list = user.get_user_illustrations(user_id)
         download_illustrations(user, data_list, save_path, add_user_folder=True)
 

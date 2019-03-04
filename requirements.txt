@@ -1,3 +1,4 @@
 requests>=2.4.3
 pyaes>=1.6.1
 docopt>=0.6.2
+tqdm
