@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
+import datetime
 import getpass
+import hashlib
 import json
 import os
 import re
@@ -12,7 +14,7 @@ from i18n import i18n as _
 
 
 class Pixiv_Get_Error(Exception):
-    def __init__(self, url, Err = None):
+    def __init__(self, url, Err=None):
         self.url = url
         self.error = Err
 
@@ -23,13 +25,12 @@ class Pixiv_Get_Error(Exception):
 class PixivApi:
     """
     Attribution:
-        session_id
         access_token
         user_id: str, login user id
         User_Agent: str, the version of pixiv app
     """
-    User_Agent = 'PixivIOSApp/6.4.0'
-    session_id = None
+    user_agent = 'PixivIOSApp/6.4.0'
+    hash_secret = '28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c'
     access_token = None
     session = ''
     user_id = ''
@@ -44,7 +45,7 @@ class PixivApi:
             if self.load_session():
                 self.login(self.username, self.password)
                 # if self.check_expired():
-                    # return
+                # return
         self.login_required()
 
     def load_session(self):
@@ -105,14 +106,16 @@ class PixivApi:
             method: str, http method
 
         """
+        local_time = datetime.datetime.now().isoformat()
         pixiv_headers = {
             'Referer': 'http://www.pixiv.net/',
-            'User-Agent': self.User_Agent,
+            'User-Agent': self.user_agent,
+            'X-Client-Time': local_time,
             'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Client-Hash': hashlib.md5((local_time + self.hash_secret).encode('utf-8')).hexdigest(),
         }
         if self.access_token:
-            pixiv_headers.update({'Authorization': 'Bearer {}'.format(self.access_token),
-                                  'Cookie': 'PHPSESSID={}'.format(self.session_id)})
+            pixiv_headers.update({'Authorization': 'Bearer {}'.format(self.access_token), })
         if headers:
             pixiv_headers.update(headers)
 
@@ -159,13 +162,6 @@ class PixivApi:
             self.access_token = respond['response']['access_token']
             self.user_id = str(respond['response']['user']['id'])
 
-            try:
-                cookie = r.headers['Set-Cookie']
-                self.session_id = re.search(r'PHPSESSID=(.*?);', cookie).group(1)
-            except Exception as e:
-                pass
-                # print(r.headers)
-                # print(respond)
             # For relogin purpose
             self.password = password
             self.username = username
@@ -311,9 +307,9 @@ class PixivApi:
             if self.username:
                 self.login(self.username, self.password)
             # else:
-                # self.check_expired()
+            # self.check_expired()
             if retry > 0:
-                return self.get_user_illustrations(user_id, per_page, page, retry = retry-1 )
+                return self.get_user_illustrations(user_id, per_page, page, retry=retry - 1)
             else:
                 print(_('Artist %s Fetch Failed') % (user_id))
                 return []
