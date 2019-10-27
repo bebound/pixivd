@@ -106,7 +106,7 @@ class PixivApi:
             method: str, http method
 
         """
-        local_time = datetime.datetime.now().isoformat()
+        local_time = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S+00:00')
         pixiv_headers = {
             'Referer': 'http://www.pixiv.net/',
             'User-Agent': self.user_agent,
