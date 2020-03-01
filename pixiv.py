@@ -199,7 +199,7 @@ def count_illustrations(illustrations):
     return sum(len(i.image_urls) for i in illustrations)
 
 
-def download_illustrations(user, data_list, save_path='.', add_user_folder=False, add_rank=False):
+def download_illustrations(user, data_list, save_path='.', add_user_folder=False, add_rank=False, skip_manga=False):
     """Download illustratons
 
     Args:
@@ -210,6 +210,8 @@ def download_illustrations(user, data_list, save_path='.', add_user_folder=False
         add_rank: bool, add illustration rank at the beginning of filename
     """
     illustrations = PixivIllustModel.from_data(data_list, user)
+    if skip_manga:
+        illustrations = list(filter(lambda x: not x.is_manga), illustrations)
     download_queue, count = check_files(illustrations, save_path, add_user_folder, add_rank)[0:2]
     if count > 0:
         print(_('Start download, total illustrations '), count)
