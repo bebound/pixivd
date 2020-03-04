@@ -211,7 +211,7 @@ def download_illustrations(user, data_list, save_path='.', add_user_folder=False
     """
     illustrations = PixivIllustModel.from_data(data_list, user)
     if skip_manga:
-        illustrations = list(filter(lambda x: not x.is_manga), illustrations)
+        illustrations = list(filter(lambda x: not x.is_manga, illustrations))
     download_queue, count = check_files(illustrations, save_path, add_user_folder, add_rank)[0:2]
     if count > 0:
         print(_('Start download, total illustrations '), count)
