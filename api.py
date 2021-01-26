@@ -4,7 +4,6 @@ import getpass
 import hashlib
 import json
 import os
-import re
 import sys
 
 import requests
@@ -204,7 +203,20 @@ class PixivApi:
         else:
             raise RuntimeError(_('[ERROR] connection failed!'), r.url, data)
 
-    def get_user_illustrations(self, user_id, per_page=9999, page=1, retry=5):
+    def get_all_user_illustrations(self, user_id):
+        r = []
+        done = False
+        page = 1
+        while not done:
+            page_data = self.get_user_illustrations(user_id, page=page)
+            if page_data:
+                r.extend(page_data)
+                page += 1
+            else:
+                done = True
+        return r
+
+    def get_user_illustrations(self, user_id, per_page=5000, page=1):
         """
         get illustrations by user id
 
@@ -304,15 +316,9 @@ class PixivApi:
                 if e.error['system']['code'] == 971:
                     print(_('Artist %s Fetch Failed, %s') % (user_id, e.error['system']['message']))
                     return []
-            if self.username:
-                self.login(self.username, self.password)
-            # else:
-            # self.check_expired()
-            if retry > 0:
-                return self.get_user_illustrations(user_id, per_page, page, retry=retry - 1)
-            else:
-                print(_('Artist %s Fetch Failed') % (user_id))
-                return []
+            if e.error['system']:
+                if e.error['system']['message'] == 404:
+                    return []
 
     def get_illustration(self, illustration_id):
         """

@@ -237,7 +237,7 @@ def download_by_user_id(user, user_ids=None):
         user_ids = input(_('Input the artist\'s id:(separate with space)')).split(' ')
     for user_id in user_ids:
         print(_('Artists %s') % user_id)
-        data_list = user.get_user_illustrations(user_id)
+        data_list = user.get_all_user_illustrations(user_id)
         download_illustrations(user, data_list, save_path, add_user_folder=True)
 
 
@@ -265,7 +265,6 @@ def artist_folder_scanner(user, user_id_list, save_path, final_list, fast):
         user_id = user_info['id']
         folder = user_info['folder']
         try:
-            per_page = 9999
             if fast:
                 per_page = _fast_mode_size
                 data_list = user.get_user_illustrations(user_id, per_page=per_page)
@@ -276,7 +275,7 @@ def artist_folder_scanner(user, user_id_list, save_path, final_list, fast):
                         data_list = user.get_user_illustrations(user_id, per_page=per_page)
                         file_path = os.path.join(save_path, folder, data_list[-1]['image_urls']['large'].split('/')[-1])
             else:
-                data_list = user.get_user_illustrations(user_id, per_page=per_page)
+                data_list = user.get_all_user_illustrations(user_id)
             illustrations = PixivIllustModel.from_data(data_list, user)
             count, checked_list = check_files(illustrations, save_path, add_user_folder=True, add_rank=False)[1:3]
             if len(sys.argv) < 2 or count:
@@ -311,7 +310,7 @@ def update_exist(user, fast=True):
     download_illustrations(user, final_list, current_path, add_user_folder=True)
 
 
-def remove_repeat(user):
+def remove_repeat(_):
     """Delete xxxxx.img if xxxxx_p0.img exist"""
     choice = input(_('Dangerous Action: continue?(y/n)'))
     if choice == 'y':
@@ -357,7 +356,6 @@ def main():
             '4': update_exist,
             '5': remove_repeat
         }
-
         while True:
             print(_('Which do you want to:'))
             for i in sorted(options.keys()):
