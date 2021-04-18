@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 import datetime
-import getpass
 import hashlib
 import json
 import os
-import sys
+from base64 import urlsafe_b64encode
+from hashlib import sha256
+from urllib.parse import urlencode
 
 import requests
+from secrets import token_urlsafe
 
 from AESCipher import AESCipher
 from i18n import i18n as _
@@ -30,67 +32,40 @@ class PixivApi:
     """
     user_agent = 'PixivIOSApp/6.4.0'
     hash_secret = '28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c'
-    access_token = None
     session = ''
     user_id = ''
     image_sizes = ','.join(['px_128x128', 'px_480mw', 'small', 'medium', 'large'])
     profile_image_sizes = ','.join(['px_170x170', 'px_50x50'])
     timeout = 20
-    username = ''
-    password = ''
+    access_token = ''
+    refresh_token = ''
+    client_id = 'MOBrBDS8blbauoSck0ZfDbtuzpyT'
+    client_secret = 'lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj'
+    auth_token_url = 'https://oauth.secure.pixiv.net/auth/token'
 
     def __init__(self):
         if os.path.exists('session'):
             if self.load_session():
-                self.login(self.username, self.password)
-                # if self.check_expired():
-                # return
+                self.auth()
         self.login_required()
 
     def load_session(self):
-        loaded_session = None
         cipher = AESCipher()
         with open('session', 'rb') as f:
             enc = f.read()
         try:
             plain = cipher.decrypt(enc)
             loaded_session = json.loads(str(plain))
-            self.username = loaded_session['username']
-            self.password = loaded_session['passwd']
-        finally:
-            return loaded_session
-
-    def check_expired(self):
-        url = 'https://public-api.secure.pixiv.net/v1/ios_magazine_banner.json'
-        print(_('Checking session'), end="", flush=True)
-
-        valid = False
-        try:
-            r = self._request_pixiv('GET', url)
-
-            if r.status_code in [200, 301, 302]:
-                try:
-                    respond = json.loads(r.text)
-                    print(respond)
-                    valid = respond['status'] == 'success'
-                except Exception as e:
-                    print(e)
-                    valid = False
-                finally:
-                    pass
-        except Exception as e:
-            print(e)
-        if valid:
-            print(_(' [VALID]'))
-        else:
-            print(_(' [EXPIRED]'))
-            self.access_token = None
-        return valid
+            self.access_token = loaded_session['access_token']
+            self.refresh_token = loaded_session['refresh_token']
+            return True
+        except:
+            print("error when load session, please delete session file and try again.")
 
     def save_session(self):
         data = {
-            'username': self.username,
-            'passwd': self.password
+            'access_token': self.access_token,
+            'refresh_token': self.refresh_token
         }
         cipher = AESCipher()
         enc = cipher.encrypt(json.dumps(data))
@@ -135,7 +110,10 @@ class PixivApi:
             else:
                 raise RuntimeError(_('[ERROR] connection failed!'), e)
 
-    def login(self, username, password):
+    def parse_token(self, data):
+        return data["access_token"], data["refresh_token"]
+
+    def login(self):
         """
         logging to Pixiv
 
@@ -143,45 +121,76 @@ class PixivApi:
             a requests session object
 
         """
-        url = 'https://oauth.secure.pixiv.net/auth/token'
+        REDIRECT_URI = "https://app-api.pixiv.net/web/v1/users/auth/pixiv/callback"
+        LOGIN_URL = "https://app-api.pixiv.net/web/v1/login"
 
-        data = {
-            'username': username,
-            'password': password,
-            'grant_type': 'password',
-            'client_id': 'bYGKuGVw91e0NMfPGp44euvGt59s',
-            'client_secret': 'HP3RmkgAmEGro0gn1x9ioawQE8WMfvLXDz3ZqxpK',
+        def s256(data):
+            """S256 transformation method."""
+            return urlsafe_b64encode(sha256(data).digest()).rstrip(b"=").decode("ascii")
+
+        def oauth_pkce(transform):
+            """Proof Key for Code Exchange by OAuth Public Clients (RFC7636)."""
+
+            code_verifier = token_urlsafe(32)
+            code_challenge = transform(code_verifier.encode("ascii"))
+
+            return code_verifier, code_challenge
+
+        code_verifier, code_challenge = oauth_pkce(s256)
+        login_params = {
+            "code_challenge": code_challenge,
+            "code_challenge_method": "S256",
+            "client": "pixiv-android",
         }
 
-        r = self._request_pixiv('POST', url, data=data)
+        print(
+            f"Please open {LOGIN_URL}?{urlencode(login_params)}, and following steps in https://gist.github.com/ZipFile/c9ebedb224406f4f11845ab700124362 to get code")
 
-        if r.status_code in [200, 301, 302]:
-            respond = json.loads(r.text)
+        try:
+            code = input("Please input code: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            return
 
-            self.access_token = respond['response']['access_token']
-            self.user_id = str(respond['response']['user']['id'])
+        r = requests.post(
+            self.auth_token_url,
+            data={
+                "client_id": self.client_id,
+                "client_secret": self.client_secret,
+                "code": code,
+                "code_verifier": code_verifier,
+                "grant_type": "authorization_code",
+                "include_policy": "true",
+                "redirect_uri": REDIRECT_URI,
+            },
+            headers={"User-Agent": self.user_agent},
+        )
+        self.access_token, self.refresh_token = self.parse_token(r.json())
+        self.save_session()
 
-            # For relogin purpose
-            self.password = password
-            self.username = username
-            self.save_session()
-        else:
-            raise RuntimeError(_('[ERROR] connection failed!'), r.status_code)
+    def auth(self):
+        """Login with password, or use the refresh_token to acquire a new bearer token"""
+        local_time = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S+00:00')
+        headers = {
+            'User-Agent': self.user_agent,
+            'X-Client-Time': local_time,
+            'X-Client-Hash': hashlib.md5((local_time + self.hash_secret).encode('utf-8')).hexdigest(),
+        }
+        data = {
+            'get_secure_url': 1,
+            'client_id': self.client_id,
+            'client_secret': self.client_secret,
+            'grant_type': 'refresh_token',
+            'refresh_token': self.refresh_token
+        }
+
+        r = self._request_pixiv('POST', self.auth_token_url, headers=headers, data=data)
+        self.access_token, self.refresh_token = self.parse_token(r.json())
+        self.save_session()
 
     def login_required(self):
         if not self.access_token:
             print(_('Please login'))
-            username = input(_('username:'))
-            password = getpass.getpass(_('password:'))
-            try:
-                self.login(username, password)
-            except Exception as e:
-                print('Login failed:', end="")
-                print(e)
-                if input('Retry? y/n') == 'y':
-                    self.login_required()
-                else:
-                    sys.exit()
+            self.login()
 
     @staticmethod
     def parse_result(r):
