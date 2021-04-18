@@ -46,7 +46,7 @@ class PixivApi:
     def __init__(self):
         if os.path.exists('session'):
             if self.load_session():
-                self.auth()
+                self.refresh()
         self.login_required()
 
     def load_session(self):
@@ -167,23 +167,18 @@ class PixivApi:
         self.access_token, self.refresh_token = self.parse_token(r.json())
         self.save_session()
 
-    def auth(self):
-        """Login with password, or use the refresh_token to acquire a new bearer token"""
-        local_time = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S+00:00')
-        headers = {
-            'User-Agent': self.user_agent,
-            'X-Client-Time': local_time,
-            'X-Client-Hash': hashlib.md5((local_time + self.hash_secret).encode('utf-8')).hexdigest(),
-        }
+    def refresh(self):
+        """Use refresh token to get new access token"""
         data = {
             'get_secure_url': 1,
             'client_id': self.client_id,
             'client_secret': self.client_secret,
             'grant_type': 'refresh_token',
-            'refresh_token': self.refresh_token
+            'refresh_token': self.refresh_token,
+            "include_policy": "true",
         }
 
-        r = self._request_pixiv('POST', self.auth_token_url, headers=headers, data=data)
+        r = self._request_pixiv('POST', self.auth_token_url, data=data)
         self.access_token, self.refresh_token = self.parse_token(r.json())
         self.save_session()
 
