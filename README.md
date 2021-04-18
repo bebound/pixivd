@@ -52,3 +52,5 @@ Examples:
 - [Pixiv-API](https://github.com/twopon/Pixiv-API)
 - [PixivPy](https://github.com/upbit/pixivpy)
 - [pixiv api](https://danbooru.donmai.us/wiki_pages/58938)
+- [Pixiv OAuth Flow](https://gist.github.com/ZipFile/c9ebedb224406f4f11845ab700124362)
+
