@@ -252,8 +252,8 @@ def download_by_history_ranking(user, date=''):
     if not date:
         date = input(_('Input the date:(eg:2015-07-10)'))
     if not (re.search("^\d{4}-\d{2}-\d{2}", date)):
-        print(_('[invalid]'))
-        date = str(datetime.date.today())
+        print(_('[invalid date format]'))
+        date = str(datetime.date.today() - datetime.timedelta(days=1))
     save_path = os.path.join(get_default_save_path(), date + ' ranking')
     data_list = user.get_ranking_illustrations(date=date, per_page=100, mode='daily')
     download_illustrations(user, data_list, save_path, add_rank=True)
