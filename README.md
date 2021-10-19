@@ -18,6 +18,7 @@ Download illustrations by **uers\_id**, **daily ranking** or **history ranking**
 
 
 ## Usage
+Clone the repo and install python requirements by `git clone https://github.com/bebound/pixiv && cd pixiv && pip3 install -r requirements.txt`
 
 ```
 Usage:
