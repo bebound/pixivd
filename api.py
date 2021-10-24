@@ -5,10 +5,11 @@ import json
 import os
 from base64 import urlsafe_b64encode
 from hashlib import sha256
+from secrets import token_urlsafe
 from urllib.parse import urlencode
 
 import requests
-from secrets import token_urlsafe
+from pixivpy3 import *
 
 from AESCipher import AESCipher
 from i18n import i18n as _
@@ -30,6 +31,7 @@ class PixivApi:
         user_id: str, login user id
         User_Agent: str, the version of pixiv app
     """
+    aapi = AppPixivAPI()
     user_agent = 'PixivIOSApp/6.4.0'
     hash_secret = '28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c'
     session = ''
@@ -72,50 +74,13 @@ class PixivApi:
         with open('session', 'wb') as f:
             f.write(enc)
 
-    def _request_pixiv(self, method, url, headers=None, params=None, data=None, retry=3):
-        """
-        handle all url request
-
-        Args:
-            method: str, http method
-
-        """
-        local_time = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S+00:00')
-        pixiv_headers = {
-            'Referer': 'http://www.pixiv.net/',
-            'User-Agent': self.user_agent,
-            'X-Client-Time': local_time,
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-Client-Hash': hashlib.md5((local_time + self.hash_secret).encode('utf-8')).hexdigest(),
-        }
-        if self.access_token:
-            pixiv_headers.update({'Authorization': 'Bearer {}'.format(self.access_token), })
-        if headers:
-            pixiv_headers.update(headers)
-
-        if not self.session:
-            self.session = requests.Session()
-        try:
-            if method == 'GET':
-                r = self.session.get(url, headers=pixiv_headers, params=params, timeout=self.timeout)
-                r.encoding = 'utf-8'
-                return r
-            elif method == 'POST':
-                return self.session.post(url, headers=pixiv_headers, params=params, data=data, timeout=self.timeout)
-            else:
-                raise RuntimeError(_('Unknown Method:'), method)
-        except Exception as e:
-            if retry > 0:
-                return self._request_pixiv(method, url, headers, params, data, retry=retry - 1)
-            else:
-                raise RuntimeError(_('[ERROR] connection failed!'), e)
-
     def parse_token(self, data):
         return data["access_token"], data["refresh_token"]
 
     def login(self):
         """
         logging to Pixiv
+        doc: https://gist.github.com/ZipFile/c9ebedb224406f4f11845ab700124362
 
         Return:
             a requests session object
@@ -144,7 +109,7 @@ class PixivApi:
         }
 
         print(
-            f"Please open {LOGIN_URL}?{urlencode(login_params)}, and following steps in https://gist.github.com/ZipFile/c9ebedb224406f4f11845ab700124362 to get code")
+            f"Please open {LOGIN_URL}?{urlencode(login_params)}\n, and following steps in https://gist.github.com/ZipFile/c9ebedb224406f4f11845ab700124362 to get code")
 
         try:
             code = input("Please input code: ").strip()
@@ -165,21 +130,14 @@ class PixivApi:
             headers={"User-Agent": self.user_agent},
         )
         self.access_token, self.refresh_token = self.parse_token(r.json())
-        self.save_session()
+        print(f'refresh token: {self.refresh_token}')
+        self.refresh()
 
     def refresh(self):
         """Use refresh token to get new access token"""
-        data = {
-            'get_secure_url': 1,
-            'client_id': self.client_id,
-            'client_secret': self.client_secret,
-            'grant_type': 'refresh_token',
-            'refresh_token': self.refresh_token,
-            "include_policy": "true",
-        }
-
-        r = self._request_pixiv('POST', self.auth_token_url, data=data)
-        self.access_token, self.refresh_token = self.parse_token(r.json())
+        # self.aapi.auth(refresh_token='cKwCinT4vVbRy4kOitoQTA7Q1lhjBr69tGy44fI-3Ho')
+        self.aapi.auth(refresh_token=self.refresh_token)
+        self.access_token, self.refresh_token = self.aapi.access_token, self.aapi.refresh_token
         self.save_session()
 
     def login_required(self):
@@ -187,335 +145,149 @@ class PixivApi:
             print(_('Please login'))
             self.login()
 
-    @staticmethod
-    def parse_result(r):
+    def get_all_user_illustrations(self, user_id, offset=0, size=-1):
         """
-        parse result from request
 
-        Args:
-            r: requests response object
-
-        Return:
-            fetched data in JSON format
+        :param user_id: str
+        :param offset: int
+        :param size: int, max result length, if < 0, return all
+        :return:
+         [
+            {
+              "id": 92990893,
+              "title": "-",
+              "type": "illust",
+              "image_urls": {
+                "square_medium": "https://i.pximg.net/c/360x360_70/img-master/img/2021/09/25/00/05/35/92990893_p0_square1200.jpg",
+                "medium": "https://i.pximg.net/c/540x540_70/img-master/img/2021/09/25/00/05/35/92990893_p0_master1200.jpg",
+                "large": "https://i.pximg.net/c/600x1200_90/img-master/img/2021/09/25/00/05/35/92990893_p0_master1200.jpg"
+              },
+              "caption": "",
+              "restrict": 0,
+              "user": {
+                "id": 22124330,
+                "name": "\u8d85\u51f6\u306e\u72c4\u7490\u5361",
+                "account": "swd3e22",
+                "profile_image_urls": {
+                  "medium": "https://i.pximg.net/user-profile/img/2017/01/10/13/28/42/11988991_bae951a38d31d217fa1eceedc0aafdbe_170.jpg"
+                },
+                "is_followed": true
+              },
+              "tags": [
+                {
+                  "name": "\u5973\u306e\u5b50",
+                  "translated_name": "girl"
+                },
+                {
+                  "name": "\u843d\u66f8",
+                  "translated_name": "doodle"
+                },
+                {
+                  "name": "closers",
+                  "translated_name": null
+                },
+                {
+                  "name": "\u30b7\u30e7\u30fc\u30c8\u30d1\u30f3\u30c4",
+                  "translated_name": "short pants"
+                },
+                {
+                  "name": "\u9b45\u60d1\u306e\u9854",
+                  "translated_name": "alluring face"
+                },
+                {
+                  "name": "Mirae",
+                  "translated_name": null
+                },
+                {
+                  "name": "\u80f8\u30dd\u30c1",
+                  "translated_name": "hanging breasts"
+                },
+                {
+                  "name": "\u898b\u305b\u30cf\u30a4\u30ec\u30b0\u30d1\u30f3\u30c4/\u30c1\u30e7\u30fc\u30ab\u30fc/\u30a2\u30fc\u30e0\u30ab\u30d0\u30fc/\u30cf\u30fc\u30cd\u30b9",
+                  "translated_name": null
+                },
+                {
+                  "name": "\u7740\u8863\u5de8\u4e73/\u80f8\u306b\u624b/\u30a2\u30e1\u30ea\u30ab\u30f3\u30b9\u30ea\u30fc\u30d6/\u3078\u305d\u51fa\u3057/\u307a\u305f\u3093\u5ea7\u308a",
+                  "translated_name": null
+                },
+                {
+                  "name": "\u30c1\u30e3\u30c3\u30af\u4e0b\u308d\u3057/\u6c57/\u64ab\u3067\u56de\u3057\u305f\u3044\u304a\u8179/\u3082\u3082\u3077\u304f",
+                  "translated_name": null
+                }
+              ],
+              "tools": [],
+              "create_date": "2021-09-25T00:05:35+09:00",
+              "page_count": 1,
+              "width": 1329,
+              "height": 1919,
+              "sanity_level": 4,
+              "x_restrict": 0,
+              "series": null,
+              "meta_single_page": {
+                "original_image_url": "https://i.pximg.net/img-original/img/2021/09/25/00/05/35/92990893_p0.jpg"
+              },
+              "meta_pages": [],
+              "total_view": 45615,
+              "total_bookmarks": 8179,
+              "is_bookmarked": false,
+              "visible": true,
+              "is_muted": false,
+              "total_comments": 28
+            }
+         ]
 
         """
-        data = json.loads(r.text)
-        if data['status'] == 'success':
-            return data['response']
-        elif data['has_error']:
-            raise Pixiv_Get_Error(r.url, data['errors'])
-        else:
-            raise RuntimeError(_('[ERROR] connection failed!'), r.url, data)
 
-    def get_all_user_illustrations(self, user_id):
         r = []
         done = False
-        page = 1
+        cur_size = 0
+
         while not done:
-            page_data = self.get_user_illustrations(user_id, page=page)
-            if page_data:
-                r.extend(page_data)
-                page += 1
-            else:
+            data = self.aapi.user_illusts(user_id, offset=offset)
+            try:
+                r.extend(data['illusts'])
+            except:
+                print(data)
+            offset += 30
+            cur_size += 30
+            if not data['next_url'] or (0 <= size <= cur_size):
                 done = True
-        return r
-
-    def get_user_illustrations(self, user_id, per_page=5000, page=1):
-        """
-        get illustrations by user id
-
-        Args:
-            :param user_id: str, pixiv id to search
-            :param per_page: int, the number of illustrations want to get
-            :param page: int
-
-        Return:
-            a list of dict
-            [
-                {
-                    'image_urls': {
-                        'small': 'http://i3.pixiv.net/c/150x150/img-master/img/2015/07/09/00/05/01/51320366_p0_master1200.jpg',
-                        'large': 'http://i3.pixiv.net/img-original/img/2015/07/09/00/05/01/51320366_p0.jpg',
-                        'medium': 'http://i3.pixiv.net/c/600x600/img-master/img/2015/07/09/00/05/01/51320366_p0_master1200.jpg',
-                        'px_480mw': 'http://i3.pixiv.net/c/480x960/img-master/img/2015/07/09/00/05/01/51320366_p0_master1200.jpg',
-                        'px_128x128': 'http://i3.pixiv.net/c/128x128/img-master/img/2015/07/09/00/05/01/51320366_p0_square1200.jpg'
-                    },
-                    'type': 'illustration',
-                    'favorite_id': 0,
-                    'width': 800,
-                    'stats': {
-                        'favorited_count': {
-                            'private': 236,
-                            'public': 3246
-                        },
-                        'views_count': 62043,
-                        'commented_count': 54,
-                        'score': 25741,
-                        'scored_count': 2600
-                    },
-                    'book_style': 'none',
-                    'content_type': None,
-                    'is_liked': False,
-                    'metadata': None,
-                    'age_limit': 'all-age',
-                    'user': {
-                        'is_following': True,
-                        'name': 'KD',
-                        'id': 395595,
-                        'account': 'cadillac',
-                        'is_friend': False,
-                        'profile': None,
-                        'is_follower': False,
-                        'profile_image_urls': {
-                            'px_50x50': 'http://i2.pixiv.net/img20/profile/cadillac/8457709_s.jpg'
-                        },
-                        'is_premium': None,
-                        'stats': None
-                    },
-                    'title': 'ドルフィンシンフォニー',
-                    'sanity_level': 'white',
-                    'reuploaded_time': '2015-07-09 00:05:01',
-                    'tools': [
-                        'Photoshop',
-                        'SAI'
-                    ],
-                    'id': 51320366,
-                    'publicity': 0,
-                    'created_time': '2015-07-09 00:05:01',
-                    'page_count': 1,
-                    'is_manga': False,
-                    'height': 1131,
-                    'caption': '今年もミニスカとthe太ももの季節がやってきました！',
-                    'tags': [
-                        '女子高生',
-                        'オリジナル',
-                        'セーラー服',
-                        'イルカ',
-                        '黒ハイソックス',
-                        'MDR-Z1000',
-                        '青',
-                        'ヘッドホン'
-                    ]
-                },XXX
-            ]
-
-        """
-        self.login_required()
-        url = 'https://public-api.secure.pixiv.net/v1/users/{}/works.json'.format(user_id)
-
-        params = {
-            'page': page,
-            'per_page': per_page,
-            'include_stats': True,
-            'include_sanity_level': True,
-            'image_sizes': self.image_sizes,
-            'profile_image_sizes': self.profile_image_sizes,
-        }
-
-        r = self._request_pixiv('GET', url, params=params)
-        try:
-            return self.parse_result(r)
-        except Pixiv_Get_Error as e:
-            if e.error['system']:
-                if e.error['system']['code'] == 971:
-                    print(_('Artist %s Fetch Failed, %s') % (user_id, e.error['system']['message']))
-                    return []
-            if e.error['system']:
-                if e.error['system']['message'] == 404:
-                    return []
+        return r[:size] if size >= 0 else r
 
     def get_illustration(self, illustration_id):
         """
         get illustration data
 
-        Return:
-            a list of dict
-            [
-                {
-                    'image_urls': {
-                        'small': 'http://i1.pixiv.net/c/150x150/img-master/img/2015/06/24/00/07/22/51055528_p0_master1200.jpg',
-                        'large': 'http://i1.pixiv.net/img-original/img/2015/06/24/00/07/22/51055528_p0.jpg',
-                        'medium': 'http://i1.pixiv.net/c/600x600/img-master/img/2015/06/24/00/07/22/51055528_p0_master1200.jpg',
-                        'px_480mw': 'http://i1.pixiv.net/c/480x960/img-master/img/2015/06/24/00/07/22/51055528_p0_master1200.jpg',
-                        'px_128x128': 'http://i1.pixiv.net/c/128x128/img-master/img/2015/06/24/00/07/22/51055528_p0_square1200.jpg'
-                    },
-                    'type': 'illustration',
-                    'favorite_id': 0,
-                    'width': 1000,
-                    'stats': {
-                        'favorited_count': {
-                            'private': 469,
-                            'public': 5767
-                        },
-                        'views_count': 139847,
-                        'commented_count': 175,
-                        'score': 53870,
-                        'scored_count': 5466
-                    },
-                    'book_style': 'right_to_left',
-                    'content_type': None,
-                    'is_liked': False,
-                    'metadata': None,
-                    'age_limit': 'all-age',
-                    'user': {
-                        'is_following': True,
-                        'name': 'KD',
-                        'id': 395595,
-                        'account': 'cadillac',
-                        'is_friend': False,
-                        'profile': None,
-                        'is_follower': False,
-                        'profile_image_urls': {
-                            'px_50x50': 'http://i2.pixiv.net/img20/profile/cadillac/8457709_s.jpg'
-                        },
-                        'is_premium': None,
-                        'stats': None
-                    },
-                    'title': 'ゆき',
-                    'sanity_level': 'white',
-                    'reuploaded_time': '2015-06-24 00:07:22',
-                    'tools': [
-                        'Photoshop',
-                        'SAI'
-                    ],
-                    'id': 51055528,
-                    'publicity': 0,
-                    'created_time': '2015-06-24 00:07:22',
-                    'page_count': 1,
-                    'is_manga': False,
-                    'height': 1414,
-                    'caption': '感谢Facebook网友的写真参考https://www.facebook.com/profile.php?id=1272330679\r\nWorldCosplay- http://worldcosplay.net/photo/3499488',
-                    'tags': [
-                        '女子高生',
-                        'オリジナル',
-                        'セーラー服',
-                        '黒髪ロング',
-                        '模写',
-                        'オリジナル5000users入り'
-                    ]
-                }
-            ]
-
-
+        Return: list of illustration instances
         """
         self.login_required()
-        url = 'https://public-api.secure.pixiv.net/v1/works/{}.json'.format(illustration_id)
+        return [self.aapi.illust_detail(illustration_id)['illust']]
 
-        params = {
-            'profile_image_sizes': self.profile_image_sizes,
-            'image_sizes': self.image_sizes,
-            'include_stats': 'true',
-            'include_sanity_level': 'true',
-        }
-        r = self._request_pixiv('GET', url, params=params)
-        return self.parse_result(r)
-
-    def get_ranking_illustrations(self, mode='daily', date='', per_page=100, page=1):
+    def get_ranking_illustrations(self, mode='day', date='', total_page=3):
         """
         fetch illustrations by ranking
 
         Args:
-            mode: [daily, weekly, monthly, male, female, rookie,
-                daily_r18, weekly_r18, male_r18, female_r18, r18g]
+            mode: [day, week, month, day_male, day_female, week_original, week_rookie, day_manga,
+                   day_r18, day_male_r18, day_female_r18, week_r18, week_r18g]
             date: '2015-04-01'
             per_page: int
             page: int
 
-        Return:
-            a list of dict
-            [
-                {
-                'mode': 'daily',
-                'date': '2015-07-10',
-                'content': 'all',
-                'works': [
-                    {
-                        'rank': 1,
-                        'previous_rank': 7,
-                        'work': {
-                            'image_urls': {
-                                'small': 'http://i3.pixiv.net/c/150x150/img-master/img/2015/07/09/00/05/01/51320366_p0_master1200.jpg',
-                                'large': 'http://i3.pixiv.net/img-original/img/2015/07/09/00/05/01/51320366_p0.jpg',
-                                'medium': 'http://i3.pixiv.net/c/600x600/img-master/img/2015/07/09/00/05/01/51320366_p0_master1200.jpg',
-                                'px_480mw': 'http://i3.pixiv.net/c/480x960/img-master/img/2015/07/09/00/05/01/51320366_p0_master1200.jpg',
-                                'px_128x128': 'http://i3.pixiv.net/c/128x128/img-master/img/2015/07/09/00/05/01/51320366_p0_square1200.jpg'
-                            },
-                            'type': 'illustration',
-                            'favorite_id': None,
-                            'width': 800,
-                            'stats': {
-                                'favorited_count': {
-                                    'private': None,
-                                    'public': None
-                                },
-                                'views_count': 42718,
-                                'commented_count': None,
-                                'score': 6392,
-                                'scored_count': 644
-                            },
-                            'book_style': 'none',
-                            'content_type': None,
-                            'is_liked': None,
-                            'metadata': None,
-                            'age_limit': 'all-age',
-                            'user': {
-                                'is_following': None,
-                                'name': 'KD',
-                                'id': 395595,
-                                'account': 'cadillac',
-                                'is_friend': None,
-                                'profile': None,
-                                'is_follower': None,
-                                'profile_image_urls': {
-                                    'px_170x170': 'http://i2.pixiv.net/img20/profile/cadillac/8457709.jpg',
-                                    'px_50x50': 'http://i2.pixiv.net/img20/profile/cadillac/8457709_s.jpg'
-                                },
-                                'is_premium': None,
-                                'stats': None
-                            },
-                            'title': 'ドルフィンシンフォニー',
-                            'sanity_level': 'white',
-                            'reuploaded_time': '2015-07-09 00:05:01',
-                            'tools': None,
-                            'id': 51320366,
-                            'publicity': 0,
-                            'created_time': '2015-07-09 00:05:00',
-                            'page_count': 1,
-                            'is_manga': None,
-                            'height': 1131,
-                            'caption': None,
-                            'tags': [
-                                '女子高生',
-                                'オリジナル',
-                                'セーラー服',
-                                'イルカ',
-                                '黒ハイソックス',
-                                'MDR-Z1000',
-                                '青',
-                                'ヘッドホン'
-                            ]
-                        }
-                    },XXX]
-                }
-            ]
-
+        Return: list of illustration data, same as `get_all_user_illustrations()`
         """
         self.login_required()
-        url = 'https://public-api.secure.pixiv.net/v1/ranking/all'
-        params = {
-            'mode': mode,
-            'page': page,
-            'per_page': per_page,
-            'include_stats': True,
-            'include_sanity_level': True,
-            'image_sizes': self.image_sizes,
-            'profile_image_sizes': self.profile_image_sizes,
-        }
-        if date:
-            params['date'] = date
-
-        r = self._request_pixiv('GET', url, params=params)
-        return self.parse_result(r)
+        r = []
+        page = 0
+        offset = 0
+        while page <= total_page:
+            data = self.aapi.illust_ranking(mode, date, offset=offset)
+            r.extend(data['illusts'])
+            offset += 30
+            page += 1
+        for index, i in enumerate(r):
+            i['rank'] = index + 1
+        return r
 
     def set_timeout(self, timeout):
         self.timeout = timeout

@@ -30,6 +30,7 @@ import re
 import sys
 import threading
 import time
+import traceback
 
 import requests
 from docopt import docopt
@@ -46,7 +47,7 @@ _PROGRESS_LOCK = threading.Lock()
 _SPEED_LOCK = threading.Lock()
 _Global_Download = 0
 _error_count = {}
-_fast_mode_size = 20
+_ILLUST_PER_PAGE = 30
 _MAX_ERROR_COUNT = 5
 
 
@@ -167,7 +168,7 @@ def get_filepath(url, illustration, save_path='.', add_user_folder=False, add_ra
 
     filename = url.split('/')[-1]
     if add_rank:
-        filename = illustration.rank + ' - ' + filename
+        filename = f'{illustration.rank} - {filename}'
     filepath = os.path.join(save_path, filename)
     return filename, filepath
 
@@ -213,7 +214,7 @@ def download_illustrations(user, data_list, save_path='.', add_user_folder=False
         add_user_folder: bool, whether put the illustration into user folder
         add_rank: bool, add illustration rank at the beginning of filename
     """
-    illustrations = PixivIllustModel.from_data(data_list, user)
+    illustrations = PixivIllustModel.from_data(data_list)
     if skip_manga:
         manga_number = sum([is_manga(i) for i in illustrations])
         if manga_number:
@@ -234,7 +235,7 @@ def download_illustrations(user, data_list, save_path='.', add_user_folder=False
 def download_by_user_id(user, user_ids=None):
     save_path = get_default_save_path()
     if not user_ids:
-        user_ids = input(_('Input the artist\'s id:(separate with space)')).split(' ')
+        user_ids = input(_('Input the artist\'s id:(separate with space)')).strip().split(' ')
     for user_id in user_ids:
         print(_('Artists %s') % user_id)
         data_list = user.get_all_user_illustrations(user_id)
@@ -244,7 +245,7 @@ def download_by_user_id(user, user_ids=None):
 def download_by_ranking(user):
     today = str(datetime.date.today())
     save_path = os.path.join(get_default_save_path(), today + ' ranking')
-    data_list = user.get_ranking_illustrations(per_page=100, mode='daily')
+    data_list = user.get_ranking_illustrations()
     download_illustrations(user, data_list, save_path, add_rank=True)
 
 
@@ -255,7 +256,7 @@ def download_by_history_ranking(user, date=''):
         print(_('[invalid date format]'))
         date = str(datetime.date.today() - datetime.timedelta(days=1))
     save_path = os.path.join(get_default_save_path(), date + ' ranking')
-    data_list = user.get_ranking_illustrations(date=date, per_page=100, mode='daily')
+    data_list = user.get_ranking_illustrations(date=date)
     download_illustrations(user, data_list, save_path, add_rank=True)
 
 
@@ -266,17 +267,22 @@ def artist_folder_scanner(user, user_id_list, save_path, final_list, fast):
         folder = user_info['folder']
         try:
             if fast:
-                per_page = _fast_mode_size
-                data_list = user.get_user_illustrations(user_id, per_page=per_page)
-                if len(data_list) > 0:
+                data_list = []
+                offset = 0
+                page_result = user.get_all_user_illustrations(user_id, offset, _ILLUST_PER_PAGE)
+                if len(page_result) > 0:
+                    data_list.extend(page_result)
                     file_path = os.path.join(save_path, folder, data_list[-1]['image_urls']['large'].split('/')[-1])
-                    while not os.path.exists(file_path) and per_page <= len(data_list):
-                        per_page += _fast_mode_size
-                        data_list = user.get_user_illustrations(user_id, per_page=per_page)
+                    while not os.path.exists(file_path) and len(page_result) == _ILLUST_PER_PAGE:
+                        offset += _ILLUST_PER_PAGE
+                        page_result = user.get_all_user_illustrations(user_id, offset, _ILLUST_PER_PAGE)
+                        data_list.extend(page_result)
                         file_path = os.path.join(save_path, folder, data_list[-1]['image_urls']['large'].split('/')[-1])
+                        # prevent rate limit
+                        time.sleep(1)
             else:
                 data_list = user.get_all_user_illustrations(user_id)
-            illustrations = PixivIllustModel.from_data(data_list, user)
+            illustrations = PixivIllustModel.from_data(data_list)
             count, checked_list = check_files(illustrations, save_path, add_user_folder=True, add_rank=False)[1:3]
             if len(sys.argv) < 2 or count:
                 try:
@@ -286,8 +292,8 @@ def artist_folder_scanner(user, user_id_list, save_path, final_list, fast):
             with _PROGRESS_LOCK:
                 for index in checked_list:
                     final_list.append(data_list[index])
-        except Exception as e:
-            print(e)
+        except Exception:
+            traceback.print_exc()
         user_id_list.task_done()
 
 
@@ -301,7 +307,8 @@ def update_exist(user, fast=True):
             if user_id:
                 user_id = user_id.group(1)
                 user_id_list.put({'id': user_id, 'folder': folder})
-    for i in range(_THREADING_NUMBER):
+    for i in range(1):
+        # use one thread to prevent Rate Limit in new App API
         scan_t = threading.Thread(target=artist_folder_scanner,
                                   args=(user, user_id_list, current_path, final_list, fast,))
         scan_t.daemon = True
@@ -376,5 +383,5 @@ def main():
 
 
 if __name__ == '__main__':
-    arguments = docopt(__doc__, version='pixiv 2.4')
+    arguments = docopt(__doc__, version='pixiv 3')
     sys.exit(main())
