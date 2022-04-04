@@ -1,7 +1,7 @@
-# Pixiv Downloader
+# PixivD
 ---
 
-A simple tool to download all illustrations from specific illustrator.
+A simple tool to download illustrations from Pixiv.
 
 Download illustrations by **uers\_id**, **daily ranking** or **history ranking**.
 
@@ -17,15 +17,15 @@ Download illustrations by **uers\_id**, **daily ranking** or **history ranking**
 - [x] Command-line interface
 
 
-## Usage
-Clone the repo and install python requirements by `git clone https://github.com/bebound/pixiv && cd pixiv && pip3 install -r requirements.txt`
+## Installation
+`pip install pixivd`
 
 ```
 Usage:
-    pixiv.py
-    pixiv.py <id>...
-    pixiv.py -r [-d | --date=<date>]
-    pixiv.py -u
+    pixivd
+    pixivd <id>...
+    pixivd -r [-d | --date=<date>]
+    pixivd -u
 
 Arguments:
     <id>                                       user_ids
@@ -38,15 +38,15 @@ Options:
     -v --version                               Show version
 
 Examples:
-    pixiv.py 7210261 1980643
-    pixiv.py -r -d 2016-09-24
+    pixivd 7210261 1980643
+    pixivd -r -d 2016-09-24
 ```
 
 
 ## Screenshot
 
 
-![img](https://raw.github.com/bebound/Pixiv/master/ScreenShot/4.png)
+![img](https://raw.github.com/bebound/Pixiv/master/ScreenShot/3.0.png)
 
 
 ## Credits

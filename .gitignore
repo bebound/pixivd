@@ -147,5 +147,4 @@ Temporary Items
 .apdisk
 
 test.py
-/session
-run.bat
+session

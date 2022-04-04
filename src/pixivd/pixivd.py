@@ -3,10 +3,10 @@
 pixiv
 
 Usage:
-    pixiv.py
-    pixiv.py <id>...
-    pixiv.py -r [-d | --date=<date>]
-    pixiv.py -u
+    pixivd
+    pixivd <id>...
+    pixivd -r [-d | --date=<date>]
+    pixivd -u
 
 Arguments:
     <id>                                       user_ids
@@ -19,8 +19,8 @@ Options:
     -v --version                               Show version
 
 Examples:
-    pixiv.py 7210261 1980643
-    pixiv.py -r -d 2016-09-24
+    pixivd 7210261 1980643
+    pixivd -r -d 2016-09-24
 """
 import datetime
 import math
@@ -36,9 +36,9 @@ import requests
 from docopt import docopt
 from tqdm import tqdm
 
-from api import PixivApi
-from i18n import i18n as _
-from model import PixivIllustModel
+from pixivd.api import PixivApi
+from pixivd.i18n import i18n as _
+from pixivd.model import PixivIllustModel
 
 _THREADING_NUMBER = 10
 _finished_download = 0
@@ -50,9 +50,11 @@ _error_count = {}
 _ILLUST_PER_PAGE = 30
 _MAX_ERROR_COUNT = 5
 
+__version__ = '3.0'
+
 
 def get_default_save_path():
-    current_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+    current_path = os.getcwd()
     filepath = os.path.join(current_path, 'illustrations')
     if not os.path.exists(filepath):
         with _CREATE_FOLDER_LOCK:
@@ -336,6 +338,7 @@ def remove_repeat(_):
 
 
 def main():
+    arguments = docopt(__doc__)
     user = PixivApi()
     if len(sys.argv) > 1:
         print(datetime.datetime.now().strftime('%X %x'))
@@ -355,7 +358,7 @@ def main():
             update_exist(user)
         print(datetime.datetime.now().strftime('%X %x'))
     else:
-        print(_(' Pixiv Downloader 2.4 ').center(77, '#'))
+        print(_(f' Pixiv Downloader {__version__}').center(77, '#'))
         options = {
             '1': download_by_user_id,
             '2': download_by_ranking,
@@ -383,5 +386,4 @@ def main():
 
 
 if __name__ == '__main__':
-    arguments = docopt(__doc__, version='pixiv 3')
     sys.exit(main())

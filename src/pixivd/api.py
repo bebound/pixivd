@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 import datetime
-import hashlib
 import json
 import os
 from base64 import urlsafe_b64encode
 from hashlib import sha256
 from secrets import token_urlsafe
 from urllib.parse import urlencode
+from pathlib import Path
 
 import requests
 from pixivpy3 import *
 
-from AESCipher import AESCipher
-from i18n import i18n as _
+from pixivd.AESCipher import AESCipher
+from pixivd.i18n import i18n as _
 
 
 class Pixiv_Get_Error(Exception):
@@ -44,16 +44,19 @@ class PixivApi:
     client_id = 'MOBrBDS8blbauoSck0ZfDbtuzpyT'
     client_secret = 'lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj'
     auth_token_url = 'https://oauth.secure.pixiv.net/auth/token'
+    session_path = Path(__file__).parent / 'data' / 'session'
 
     def __init__(self):
-        if os.path.exists('session'):
-            if self.load_session():
-                self.refresh()
+        self.ensure_session_dir()
         self.login_required()
+
+    def ensure_session_dir(self):
+        if not Path(self.session_path).parent.exists():
+            self.session_path.parent.mkdir()
 
     def load_session(self):
         cipher = AESCipher()
-        with open('session', 'rb') as f:
+        with open(self.session_path, 'rb') as f:
             enc = f.read()
         try:
             plain = cipher.decrypt(enc)
@@ -71,7 +74,7 @@ class PixivApi:
         }
         cipher = AESCipher()
         enc = cipher.encrypt(json.dumps(data))
-        with open('session', 'wb') as f:
+        with open(self.session_path, 'wb') as f:
             f.write(enc)
 
     def parse_token(self, data):
@@ -141,6 +144,10 @@ class PixivApi:
         self.save_session()
 
     def login_required(self):
+        if self.session_path.exists():
+            if self.load_session():
+                self.refresh()
+
         if not self.access_token:
             print(_('Please login'))
             self.login()
@@ -281,7 +288,7 @@ class PixivApi:
         page = 0
         offset = 0
         while page <= total_page:
-            data = self.aapi.illust_ranking(mode, date, offset=offset)
+            data = self.aapi.illust_ranking(mode, date=date, offset=offset)
             r.extend(data['illusts'])
             offset += 30
             page += 1
