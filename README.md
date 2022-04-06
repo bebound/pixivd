@@ -1,11 +1,10 @@
 # PixivD
----
+
+[![PyPI version](https://badge.fury.io/py/pixivd.svg)](https://badge.fury.io/py/pixivd)
 
 A simple tool to download illustrations from Pixiv.
 
 Download illustrations by **uers\_id**, **daily ranking** or **history ranking**.
-
----
 
 ## Features
 - [x] Keep login sessions
@@ -20,8 +19,8 @@ Download illustrations by **uers\_id**, **daily ranking** or **history ranking**
 ## Installation
 `pip install pixivd`
 
+## Usage
 ```
-Usage:
     pixivd
     pixivd <id>...
     pixivd -r [-d | --date=<date>]
@@ -42,6 +41,7 @@ Examples:
     pixivd -r -d 2016-09-24
 ```
 
+The illusts will be downloaded to `illustrations` folder. 
 
 ## Screenshot
 
