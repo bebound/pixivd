@@ -4,19 +4,21 @@ pixiv
 
 Usage:
     pixivd
-    pixivd <id>...
+    pixivd <userid>...
     pixivd -r [-d | --date=<date>]
     pixivd -u
+    pixivd --version
+    pixivd -h | --help
 
 Arguments:
-    <id>                                       user_ids
+    <userid>                                  Pixiv user id
 
 Options:
-    -r                                         Download by ranking
-    -d <date> --date <date>                    Target date
-    -u                                         Update exist folder
-    -h --help                                  Show this screen
-    -v --version                               Show version
+    -r                                        Download by ranking
+    -d <date> --date <date>                   Target date
+    -u                                        Update exist folder
+    -h --help                                 Show this screen
+    --version                                 Show version
 
 Examples:
     pixivd 7210261 1980643
@@ -50,7 +52,7 @@ _error_count = {}
 _ILLUST_PER_PAGE = 30
 _MAX_ERROR_COUNT = 5
 
-__version__ = '3.0'
+__version__ = '3.1.1'
 
 
 def get_default_save_path():
@@ -206,11 +208,11 @@ def is_manga(illustrate):
     return True if illustrate.is_manga or illustrate.type == 'manga' else False
 
 
-def download_illustrations(user, data_list, save_path='.', add_user_folder=False, add_rank=False, skip_manga=False):
+def download_illustrations(api, data_list, save_path='.', add_user_folder=False, add_rank=False, skip_manga=False):
     """Download illustratons
 
     Args:
-        user: PixivApi()
+        api: PixivApi()
         data_list: json
         save_path: str, download path of the illustrations
         add_user_folder: bool, whether put the illustration into user folder
@@ -234,35 +236,35 @@ def download_illustrations(user, data_list, save_path='.', add_user_folder=False
         print(_('There is no new illustration need to download'))
 
 
-def download_by_user_id(user, user_ids=None):
+def download_by_user_id(api, user_ids=None):
     save_path = get_default_save_path()
     if not user_ids:
         user_ids = input(_('Input the artist\'s id:(separate with space)')).strip().split(' ')
     for user_id in user_ids:
         print(_('Artists %s') % user_id)
-        data_list = user.get_all_user_illustrations(user_id)
-        download_illustrations(user, data_list, save_path, add_user_folder=True)
+        data_list = api.get_all_user_illustrations(user_id)
+        download_illustrations(api, data_list, save_path, add_user_folder=True)
 
 
-def download_by_ranking(user):
+def download_by_ranking(api):
     today = str(datetime.date.today())
     save_path = os.path.join(get_default_save_path(), today + ' ranking')
-    data_list = user.get_ranking_illustrations()
-    download_illustrations(user, data_list, save_path, add_rank=True)
+    data_list = api.get_ranking_illustrations()
+    download_illustrations(api, data_list, save_path, add_rank=True)
 
 
-def download_by_history_ranking(user, date=''):
+def download_by_history_ranking(api, date=''):
     if not date:
         date = input(_('Input the date:(eg:2015-07-10)'))
     if not (re.search(r"^\d{4}-\d{2}-\d{2}", date)):
         print(_('[invalid date format]'))
         date = str(datetime.date.today() - datetime.timedelta(days=1))
     save_path = os.path.join(get_default_save_path(), date + ' ranking')
-    data_list = user.get_ranking_illustrations(date=date)
-    download_illustrations(user, data_list, save_path, add_rank=True)
+    data_list = api.get_ranking_illustrations(date=date)
+    download_illustrations(api, data_list, save_path, add_rank=True)
 
 
-def artist_folder_scanner(user, user_id_list, save_path, final_list, fast):
+def artist_folder_scanner(api, user_id_list, save_path, final_list, fast):
     while not user_id_list.empty():
         user_info = user_id_list.get()
         user_id = user_info['id']
@@ -271,19 +273,19 @@ def artist_folder_scanner(user, user_id_list, save_path, final_list, fast):
             if fast:
                 data_list = []
                 offset = 0
-                page_result = user.get_all_user_illustrations(user_id, offset, _ILLUST_PER_PAGE)
+                page_result = api.get_all_user_illustrations(user_id, offset, _ILLUST_PER_PAGE)
                 if len(page_result) > 0:
                     data_list.extend(page_result)
                     file_path = os.path.join(save_path, folder, data_list[-1]['image_urls']['large'].split('/')[-1])
                     while not os.path.exists(file_path) and len(page_result) == _ILLUST_PER_PAGE:
                         offset += _ILLUST_PER_PAGE
-                        page_result = user.get_all_user_illustrations(user_id, offset, _ILLUST_PER_PAGE)
+                        page_result = api.get_all_user_illustrations(user_id, offset, _ILLUST_PER_PAGE)
                         data_list.extend(page_result)
                         file_path = os.path.join(save_path, folder, data_list[-1]['image_urls']['large'].split('/')[-1])
                         # prevent rate limit
                         time.sleep(1)
             else:
-                data_list = user.get_all_user_illustrations(user_id)
+                data_list = api.get_all_user_illustrations(user_id)
             illustrations = PixivIllustModel.from_data(data_list)
             count, checked_list = check_files(illustrations, save_path, add_user_folder=True, add_rank=False)[1:3]
             if len(sys.argv) < 2 or count:
@@ -299,7 +301,7 @@ def artist_folder_scanner(user, user_id_list, save_path, final_list, fast):
         user_id_list.task_done()
 
 
-def update_exist(user, fast=True):
+def update_exist(api, fast=True):
     current_path = get_default_save_path()
     final_list = []
     user_id_list = queue.Queue()
@@ -312,11 +314,11 @@ def update_exist(user, fast=True):
     for i in range(1):
         # use one thread to prevent Rate Limit in new App API
         scan_t = threading.Thread(target=artist_folder_scanner,
-                                  args=(user, user_id_list, current_path, final_list, fast,))
+                                  args=(api, user_id_list, current_path, final_list, fast,))
         scan_t.daemon = True
         scan_t.start()
     user_id_list.join()
-    download_illustrations(user, final_list, current_path, add_user_folder=True)
+    download_illustrations(api, final_list, current_path, add_user_folder=True)
 
 
 def remove_repeat(_):
@@ -339,23 +341,27 @@ def remove_repeat(_):
 
 def main():
     arguments = docopt(__doc__)
-    user = PixivApi()
+    api = PixivApi()
     if len(sys.argv) > 1:
-        print(datetime.datetime.now().strftime('%X %x'))
-        ids = arguments['<id>']
+        ids = arguments['<userid>']
         is_rank = arguments['-r']
         date = arguments['--date']
         is_update = arguments['-u']
+        show_version = arguments['--version']
+        if show_version:
+            print(__version__)
+            return
+        print(datetime.datetime.now().strftime('%X %x'))
         if ids:
-            download_by_user_id(user, ids)
+            download_by_user_id(api, ids)
         elif is_rank:
             if date:
                 date = date[0]
-                download_by_history_ranking(user, date)
+                download_by_history_ranking(api, date)
             else:
-                download_by_ranking(user)
+                download_by_ranking(api)
         elif is_update:
-            update_exist(user)
+            update_exist(api)
         print(datetime.datetime.now().strftime('%X %x'))
     else:
         print(_(f' Pixiv Downloader {__version__}').center(77, '#'))
@@ -374,9 +380,9 @@ def main():
             if choose in [str(i) for i in range(1, len(options) + 1)]:
                 print((' ' + _(options[choose].__name__).replace('_', ' ') + ' ').center(60, '#') + '\n')
                 if choose == 4:
-                    options[choose](user, False)
+                    options[choose](api, False)
                 else:
-                    options[choose](user)
+                    options[choose](api)
                 print('\n' + (' ' + _(options[choose].__name__).replace('_', ' ') + _(' finished ')).center(60,
                                                                                                             '#') + '\n')
             elif choose == 'e':

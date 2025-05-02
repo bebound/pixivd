@@ -4,17 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pixivd"
-version = "3.1"
+dynamic = ['version']
 description = "A simple tool to download illustrations from Pixiv."
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
     {name = "KK", email = "bebound@gmail.com"}
 ]
 requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent"
 ]
 dependencies = [
@@ -34,6 +34,9 @@ where = ["src"]
 
 [tool.setuptools]
 include-package-data = true
+
+[tool.setuptools.dynamic]
+version = {attr = "pixivd.pixivd.__version__"}
 
 [project.scripts]
 pixivd = "pixivd.pixivd:main"
