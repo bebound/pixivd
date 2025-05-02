@@ -254,7 +254,7 @@ def download_by_ranking(user):
 def download_by_history_ranking(user, date=''):
     if not date:
         date = input(_('Input the date:(eg:2015-07-10)'))
-    if not (re.search("^\d{4}-\d{2}-\d{2}", date)):
+    if not (re.search(r"^\d{4}-\d{2}-\d{2}", date)):
         print(_('[invalid date format]'))
         date = str(datetime.date.today() - datetime.timedelta(days=1))
     save_path = os.path.join(get_default_save_path(), date + ' ranking')
@@ -305,7 +305,7 @@ def update_exist(user, fast=True):
     user_id_list = queue.Queue()
     for folder in os.listdir(current_path):
         if os.path.isdir(os.path.join(current_path, folder)):
-            user_id = re.search('^(\d+) ', folder)
+            user_id = re.search(r'^(\d+) ', folder)
             if user_id:
                 user_id = user_id.group(1)
                 user_id_list.put({'id': user_id, 'folder': folder})
@@ -326,10 +326,10 @@ def remove_repeat(_):
         illust_path = get_default_save_path()
         for folder in os.listdir(illust_path):
             if os.path.isdir(os.path.join(illust_path, folder)):
-                if re.search('^(\d+) ', folder):
+                if re.search(r'^(\d+) ', folder):
                     path = os.path.join(illust_path, folder)
                     for file_name in os.listdir(path):
-                        illustration_id = re.search('^\d+\.', file_name)
+                        illustration_id = re.search(r'^\d+\.', file_name)
                         if illustration_id:
                             if os.path.isfile(os.path.join(path
                                     , illustration_id.string.replace('.', '_p0.'))):
