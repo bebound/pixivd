@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
-import datetime
 import json
-import os
 from base64 import urlsafe_b64encode
 from hashlib import sha256
+from pathlib import Path
 from secrets import token_urlsafe
 from urllib.parse import urlencode
-from pathlib import Path
 
 import requests
 from pixivpy3 import *
 
-from pixivd.AESCipher import AESCipher
-from pixivd.i18n import i18n as _
+from .AESCipher import AESCipher
+from .i18n import i18n as _
 
 
 class Pixiv_Get_Error(Exception):

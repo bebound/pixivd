@@ -36,9 +36,9 @@ import requests
 from docopt import docopt
 from tqdm import tqdm
 
-from pixivd.api import PixivApi
-from pixivd.i18n import i18n as _
-from pixivd.model import PixivIllustModel
+from .api import PixivApi
+from .i18n import i18n as _
+from .model import PixivIllustModel
 
 _THREADING_NUMBER = 10
 _finished_download = 0
@@ -93,7 +93,7 @@ def print_progress(max_size):
 
 
 def download_file(url, filepath):
-    headers = {'Referer': 'http://www.pixiv.net/'}
+    headers = {'Referer': 'https://www.pixiv.net/', 'User-Agent': PixivApi.user_agent}
     r = requests.get(url, headers=headers, stream=True, timeout=PixivApi.timeout)
     if r.status_code == requests.codes.ok:
         total_length = r.headers.get('content-length')
