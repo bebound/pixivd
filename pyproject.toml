@@ -32,6 +32,11 @@ Source = "https://github.com/bebound/pixiv"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[dependency-groups]
+dev = [
+    "ruff>=0.11.8",
+]
+
 [tool.setuptools]
 include-package-data = true
 
