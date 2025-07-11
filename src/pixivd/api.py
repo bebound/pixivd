@@ -13,15 +13,6 @@ from .AESCipher import AESCipher
 from .i18n import i18n as _
 
 
-class Pixiv_Get_Error(Exception):
-    def __init__(self, url, Err=None):
-        self.url = url
-        self.error = Err
-
-    def __str__(self):
-        return 'Failed to get data: ' + self.url
-
-
 class PixivApi:
     """
     Attribution:

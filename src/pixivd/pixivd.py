@@ -239,7 +239,7 @@ def download_illustrations(api, data_list, save_path='.', add_user_folder=False,
 def download_by_user_id(api, user_ids=None):
     save_path = get_default_save_path()
     if not user_ids:
-        user_ids = input(_('Input the artist\'s id:(separate with space)')).strip().split(' ')
+        user_ids = input(_('Input the artist\'s id(separate with space):')).strip().split(' ')
     for user_id in user_ids:
         print(_('Artists %s') % user_id)
         data_list = api.get_all_user_illustrations(user_id)

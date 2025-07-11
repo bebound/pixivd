@@ -56,8 +56,8 @@ msgid "There is no new illustration need to download"
 msgstr "There is no new illustration need to download"
 
 #: pixiv.py:239
-msgid "Input the artist's id:(separate with space)"
-msgstr "Input the artist's id:(separate with space)"
+msgid "Input the artist's id(separate with space):"
+msgstr "Input the artist's id(separate with space):"
 
 #: pixiv.py:241
 #, python-format
