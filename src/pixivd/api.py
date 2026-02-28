@@ -7,7 +7,7 @@ from secrets import token_urlsafe
 from urllib.parse import urlencode
 
 import requests
-from pixivpy3 import *
+from pixivpy3 import AppPixivAPI
 
 from .AESCipher import AESCipher
 from .i18n import i18n as _
@@ -22,7 +22,6 @@ class PixivApi:
     """
     aapi = AppPixivAPI()
     user_agent = 'PixivIOSApp/6.4.0'
-    hash_secret = '28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c'
     session = ''
     user_id = ''
     image_sizes = ','.join(['px_128x128', 'px_480mw', 'small', 'medium', 'large'])
@@ -49,11 +48,11 @@ class PixivApi:
             enc = f.read()
         try:
             plain = cipher.decrypt(enc)
-            loaded_session = json.loads(str(plain))
+            loaded_session = json.loads(plain)
             self.access_token = loaded_session['access_token']
             self.refresh_token = loaded_session['refresh_token']
             return True
-        except:
+        except UnicodeDecodeError:
             print("error when load session, please delete session file and try again.")
 
     def save_session(self):

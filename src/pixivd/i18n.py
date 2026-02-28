@@ -1,6 +1,5 @@
 import gettext
 import os
-import sys
 import locale
 
 languages = [locale.getdefaultlocale()[0], 'en_US']

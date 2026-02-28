@@ -340,55 +340,58 @@ def remove_repeat(_):
 
 
 def main():
-    arguments = docopt(__doc__)
-    api = PixivApi()
-    if len(sys.argv) > 1:
-        ids = arguments['<userid>']
-        is_rank = arguments['-r']
-        date = arguments['--date']
-        is_update = arguments['-u']
-        show_version = arguments['--version']
-        if show_version:
-            print(__version__)
-            return
-        print(datetime.datetime.now().strftime('%X %x'))
-        if ids:
-            download_by_user_id(api, ids)
-        elif is_rank:
-            if date:
-                date = date[0]
-                download_by_history_ranking(api, date)
-            else:
-                download_by_ranking(api)
-        elif is_update:
-            update_exist(api)
-        print(datetime.datetime.now().strftime('%X %x'))
-    else:
-        print(_(f' Pixiv Downloader {__version__}').center(77, '#'))
-        options = {
-            '1': download_by_user_id,
-            '2': download_by_ranking,
-            '3': download_by_history_ranking,
-            '4': update_exist,
-            '5': remove_repeat
-        }
-        while True:
-            print(_('Which do you want to:'))
-            for i in sorted(options.keys()):
-                print('\t %s %s' % (i, _(options[i].__name__).replace('_', ' ')))
-            choose = input('\t e %s \n:' % _('exit'))
-            if choose in [str(i) for i in range(1, len(options) + 1)]:
-                print((' ' + _(options[choose].__name__).replace('_', ' ') + ' ').center(60, '#') + '\n')
-                if choose == 4:
-                    options[choose](api, False)
+    try:
+        arguments = docopt(__doc__)
+        api = PixivApi()
+        if len(sys.argv) > 1:
+            ids = arguments['<userid>']
+            is_rank = arguments['-r']
+            date = arguments['--date']
+            is_update = arguments['-u']
+            show_version = arguments['--version']
+            if show_version:
+                print(__version__)
+                return
+            print(datetime.datetime.now().strftime('%X %x'))
+            if ids:
+                download_by_user_id(api, ids)
+            elif is_rank:
+                if date:
+                    date = date[0]
+                    download_by_history_ranking(api, date)
                 else:
-                    options[choose](api)
-                print('\n' + (' ' + _(options[choose].__name__).replace('_', ' ') + _(' finished ')).center(60,
+                    download_by_ranking(api)
+            elif is_update:
+                update_exist(api)
+            print(datetime.datetime.now().strftime('%X %x'))
+        else:
+            print(_(f' Pixiv Downloader {__version__}').center(77, '#'))
+            options = {
+                '1': download_by_user_id,
+                '2': download_by_ranking,
+                '3': download_by_history_ranking,
+                '4': update_exist,
+                '5': remove_repeat
+            }
+            while True:
+                print(_('Which do you want to:'))
+                for i in sorted(options.keys()):
+                    print('\t %s %s' % (i, _(options[i].__name__).replace('_', ' ')))
+                choose = input('\t e %s \n:' % _('exit'))
+                if choose in [str(i) for i in range(1, len(options) + 1)]:
+                    print((' ' + _(options[choose].__name__).replace('_', ' ') + ' ').center(60, '#') + '\n')
+                    if choose == 4:
+                        options[choose](api, False)
+                    else:
+                        options[choose](api)
+                    print('\n' + (' ' + _(options[choose].__name__).replace('_', ' ') + _(' finished ')).center(60,
                                                                                                             '#') + '\n')
-            elif choose == 'e':
-                break
-            else:
-                print(_('Wrong input!'))
+                elif choose == 'e':
+                    break
+                else:
+                    print(_('Wrong input!'))
+    except KeyboardInterrupt:
+        sys.exit(0)
 
 
 if __name__ == '__main__':
