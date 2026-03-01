@@ -52,7 +52,7 @@ _error_count = {}
 _ILLUST_PER_PAGE = 30
 _MAX_ERROR_COUNT = 5
 
-__version__ = '3.1.2'
+__version__ = '3.1.3'
 
 
 def get_default_save_path():
