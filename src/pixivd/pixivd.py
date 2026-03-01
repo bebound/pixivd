@@ -390,7 +390,7 @@ def main():
                     break
                 else:
                     print(_('Wrong input!'))
-    except KeyboardInterrupt:
+    except KeyboardInterrupt, EOFError:
         sys.exit(0)
 
 
