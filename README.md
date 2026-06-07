@@ -25,9 +25,7 @@ Or you can use it with `uv`'s `uvx pixivd`
 
 ### Docker
 
-Setting `PIXIVD_AES_INT` to a fixed integer to persist the login sessions.
-
-`docker run -v ./:/app -e PIXIVD_AES_INT=123 --rm -it ghcr.io/bebound/pixivd`
+`docker run -v ~/.config/pixivd:/root/.config/pixivd --rm -it ghcr.io/bebound/pixivd`
 
 ## Usage
 
