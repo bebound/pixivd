@@ -24,7 +24,7 @@ jobs:
 
     - name: Check tag does not exist
       run: |
-        TAG="v${{ steps.version.outputs.version }}"
+        TAG="${{ steps.version.outputs.version }}"
         if git ls-remote --tags origin | grep -q "refs/tags/${TAG}$"; then
           echo "Tag ${TAG} already exists. Aborting."
           exit 1
