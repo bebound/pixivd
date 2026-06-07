@@ -1,29 +1,5 @@
 #!/usr/bin/env python3
-"""
-pixiv
-
-Usage:
-    pixivd
-    pixivd <userid>...
-    pixivd -r [-d | --date=<date>]
-    pixivd -u
-    pixivd --version
-    pixivd -h | --help
-
-Arguments:
-    <userid>                                  Pixiv user id
-
-Options:
-    -r                                        Download by ranking
-    -d <date> --date <date>                   Target date
-    -u                                        Update exist folder
-    -h --help                                 Show this screen
-    --version                                 Show version
-
-Examples:
-    pixivd 7210261 1980643
-    pixivd -r -d 2016-09-24
-"""
+import argparse
 import datetime
 import math
 import os
@@ -35,7 +11,6 @@ import time
 import traceback
 
 import requests
-from docopt import docopt
 from tqdm import tqdm
 
 from .api import PixivApi
@@ -53,6 +28,23 @@ _ILLUST_PER_PAGE = 30
 _MAX_ERROR_COUNT = 5
 
 __version__ = '3.1.5'
+
+
+def parse_cli_args(argv=None):
+    parser = argparse.ArgumentParser(prog='pixivd', description='Pixiv downloader')
+    parser.add_argument('userid', nargs='*', help='Pixiv user id')
+    parser.add_argument('-r', action='store_true', dest='rank', help='Download by ranking')
+    parser.add_argument('-d', '--date', help='Target date (use with -r), e.g. 2016-09-24')
+    parser.add_argument('-u', action='store_true', dest='update', help='Update exist folder')
+    parser.add_argument('--version', action='store_true', help='Show version')
+    args = parser.parse_args(argv)
+
+    mode_count = int(bool(args.userid)) + int(args.rank) + int(args.update)
+    if args.date and not args.rank:
+        parser.error('--date requires -r')
+    if mode_count > 1:
+        parser.error('choose only one mode: <userid>..., -r, or -u')
+    return args
 
 
 def get_default_save_path():
@@ -341,23 +333,22 @@ def remove_repeat(_):
 
 def main():
     try:
-        arguments = docopt(__doc__)
-        api = PixivApi()
+        arguments = parse_cli_args()
         if len(sys.argv) > 1:
-            ids = arguments['<userid>']
-            is_rank = arguments['-r']
-            date = arguments['--date']
-            is_update = arguments['-u']
-            show_version = arguments['--version']
+            ids = arguments.userid
+            is_rank = arguments.rank
+            date = arguments.date
+            is_update = arguments.update
+            show_version = arguments.version
             if show_version:
                 print(__version__)
                 return
+            api = PixivApi()
             print(datetime.datetime.now().strftime('%X %x'))
             if ids:
                 download_by_user_id(api, ids)
             elif is_rank:
                 if date:
-                    date = date[0]
                     download_by_history_ranking(api, date)
                 else:
                     download_by_ranking(api)
@@ -365,6 +356,7 @@ def main():
                 update_exist(api)
             print(datetime.datetime.now().strftime('%X %x'))
         else:
+            api = PixivApi()
             print(_(f' Pixiv Downloader {__version__}').center(77, '#'))
             options = {
                 '1': download_by_user_id,
@@ -390,7 +382,7 @@ def main():
                     break
                 else:
                     print(_('Wrong input!'))
-    except KeyboardInterrupt, EOFError:
+    except (KeyboardInterrupt, EOFError):
         sys.exit(0)
 
 

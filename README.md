@@ -32,20 +32,19 @@ Setting `PIXIVD_AES_INT` to a fixed integer to persist the login sessions.
 ## Usage
 
 ```
-    pixivd
-    pixivd <id>...
-    pixivd -r [-d | --date=<date>]
-    pixivd -u
+usage: pixivd [-h] [-r] [-d DATE] [-u] [--version] [userid ...]
 
-Arguments:
-    <id>                                       user_ids
+Pixiv downloader
 
-Options:
-    -r                                         Download by ranking
-    -d <date> --date <date>                    Target date
-    -u                                         Update exist folder
-    -h --help                                  Show this screen
-    -v --version                               Show version
+positional arguments:
+  userid           Pixiv user id
+
+options:
+  -h, --help       show this help message and exit
+  -r               Download by ranking
+  -d, --date DATE  Target date (use with -r), e.g. 2016-09-24
+  -u               Update exist folder
+  --version        Show version
 
 Examples:
     pixivd 7210261 1980643
