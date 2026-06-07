@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import os
 from base64 import urlsafe_b64encode
 from hashlib import sha256
 from pathlib import Path
@@ -9,7 +10,6 @@ from urllib.parse import urlencode
 import requests
 from pixivpy3 import AppPixivAPI
 
-from .AESCipher import AESCipher
 from .i18n import i18n as _
 
 
@@ -32,7 +32,7 @@ class PixivApi:
     client_id = 'MOBrBDS8blbauoSck0ZfDbtuzpyT'
     client_secret = 'lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj'
     auth_token_url = 'https://oauth.secure.pixiv.net/auth/token'
-    session_path = Path('./') / 'data' / 'session'
+    session_path = Path.home() / '.config' / 'pixivd' / 'session.json'
 
     def __init__(self):
         self.ensure_session_dir()
@@ -40,30 +40,32 @@ class PixivApi:
 
     def ensure_session_dir(self):
         if not Path(self.session_path).parent.exists():
-            self.session_path.parent.mkdir()
+            self.session_path.parent.mkdir(parents=True, exist_ok=True)
+
+    def _open_session_for_write(self):
+        def opener(path, flags):
+            return os.open(path, flags, 0o600)
+
+        return open(self.session_path, 'w', encoding='utf-8', opener=opener)
+
 
     def load_session(self):
-        cipher = AESCipher()
-        with open(self.session_path, 'rb') as f:
-            enc = f.read()
         try:
-            plain = cipher.decrypt(enc)
-            loaded_session = json.loads(plain)
+            with open(self.session_path, 'r', encoding='utf-8') as f:
+                loaded_session = json.load(f)
             self.access_token = loaded_session['access_token']
             self.refresh_token = loaded_session['refresh_token']
             return True
-        except UnicodeDecodeError:
-            print("error when load session, please delete session file and try again.")
+        except (KeyError, json.JSONDecodeError):
+            print(f"error when load session from {self.session_path}, please delete session file and try again.")
 
     def save_session(self):
         data = {
             'access_token': self.access_token,
             'refresh_token': self.refresh_token
         }
-        cipher = AESCipher()
-        enc = cipher.encrypt(json.dumps(data))
-        with open(self.session_path, 'wb') as f:
-            f.write(enc)
+        with self._open_session_for_write() as f:
+            json.dump(data, f)
 
     def parse_token(self, data):
         return data["access_token"], data["refresh_token"]
