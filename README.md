@@ -30,7 +30,7 @@ Or you can use it with `uv`'s `uvx pixivd`
 
 ### Docker
 
-`docker run -v ~/.config/pixivd:/root/.config/pixivd --rm -it ghcr.io/bebound/pixivd`
+`docker run -v ~/.config/pixivd:/root/.config/pixivd -v ./illustrations:/app/illustrations --rm -it ghcr.io/bebound/pixivd`
 
 ## Usage
 
