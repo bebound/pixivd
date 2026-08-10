@@ -26,7 +26,7 @@ Or you can use it with `uv`'s `uvx pixivd`
 
 ### Docker
 
-`docker run --user $(id -u):$(id -g) -v ~/.config/pixivd:/root/.config/pixivd -v ./illustrations:/app/illustrations --rm -it ghcr.io/bebound/pixivd`
+`docker run --user $(id -u):$(id -g) -v ~/.config/pixivd:/.config/pixivd -v ./illustrations:/app/illustrations --rm -it ghcr.io/bebound/pixivd`
 
 ## Usage
 
