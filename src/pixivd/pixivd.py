@@ -25,7 +25,7 @@ _error_count = {}
 _ILLUST_PER_PAGE = 30
 _MAX_ERROR_COUNT = 5
 
-__version__ = '3.3'
+__version__ = '3.3.1'
 
 
 def parse_cli_args(argv=None):
