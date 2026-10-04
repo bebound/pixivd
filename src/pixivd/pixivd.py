@@ -24,6 +24,7 @@ _Global_Download = 0
 _error_count = {}
 _ILLUST_PER_PAGE = 30
 _MAX_ERROR_COUNT = 5
+_HASHED_FILENAME = re.compile(r'^(\d+)-[0-9A-Za-z]{16,}(?=_|\.)')
 
 __version__ = '3.3.1'
 
@@ -144,6 +145,16 @@ def start_and_wait_download_threading(download_queue, count):
     download_queue.join()
 
 
+def remove_hash_from_filename(filename):
+    """Drop the hash pixiv adds to the filename of some original images.
+
+    The url of an artwork whose images have been replaced gets a hash to bust
+    the cdn cache, e.g. '90661978-018f851f0ba453bb61f8bf18c23e53d6_p0.jpg'
+    becomes '90661978_p0.jpg'.
+    """
+    return _HASHED_FILENAME.sub(r'\1', filename)
+
+
 def get_filepath(url, illustration, save_path='.', add_user_folder=False, add_rank=False):
     """return (filename,filepath)"""
 
@@ -159,7 +170,7 @@ def get_filepath(url, illustration, save_path='.', add_user_folder=False, add_ra
             dir_name = next(i for i in cur_dirs if os.path.basename(i).split()[0] == user_id)
         save_path = os.path.join(save_path, dir_name)
 
-    filename = url.split('/')[-1]
+    filename = remove_hash_from_filename(url.split('/')[-1])
     if add_rank:
         filename = f'{illustration.rank} - {filename}'
     filepath = os.path.join(save_path, filename)
