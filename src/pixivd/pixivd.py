@@ -26,7 +26,7 @@ _ILLUST_PER_PAGE = 30
 _MAX_ERROR_COUNT = 5
 _HASHED_FILENAME = re.compile(r'^(\d+)-[0-9A-Za-z]{16,}(?=_|\.)')
 
-__version__ = '3.3.1'
+__version__ = '3.3.2'
 
 
 def parse_cli_args(argv=None):
